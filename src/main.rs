@@ -1,30 +1,65 @@
 mod main_menu;
+mod maze;
 
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
-use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
-use vulkano::device::{Device, DeviceExtensions};
-use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
-use vulkano::image::{ImageUsage, SwapchainImage};
-use vulkano::instance::{Instance, PhysicalDevice};
-use vulkano::pipeline::viewport::Viewport;
-use vulkano::pipeline::GraphicsPipeline;
-use vulkano::swapchain;
-use vulkano::swapchain::{
-    AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
-    SwapchainCreationError,
+use vulkano::{
+    buffer::{BufferUsage, CpuAccessibleBuffer},
+    command_buffer::{AutoCommandBufferBuilder, DynamicState},
+    device::{Device, DeviceExtensions},
+    framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass},
+    image::{ImageUsage, SwapchainImage},
+    instance::{Instance, PhysicalDevice},
+    pipeline::{viewport::Viewport, GraphicsPipeline},
+    swapchain,
+    swapchain::{
+        AcquireError, ColorSpace, FullscreenExclusive,
+        PresentMode, SurfaceTransform, Swapchain,
+        SwapchainCreationError,
+    },
+    sync,
+    sync::{FlushError, GpuFuture},
 };
-use vulkano::sync;
-use vulkano::sync::{FlushError, GpuFuture};
-
 use vulkano_win::VkSurfaceBuild;
-use winit::event::{Event, WindowEvent, KeyboardInput, ElementState};
-use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Window, WindowBuilder, Fullscreen};
+use winit::{
+    event::{Event, WindowEvent, KeyboardInput, ElementState},
+    event_loop::{ControlFlow, EventLoop},
+    window::{Window, WindowBuilder, Fullscreen},
+};
 
 use std::sync::Arc;
-use crate::main_menu::MainMenu;
+use std::thread;
+use winit::event::VirtualKeyCode;
+
+
+mod vs {
+    vulkano_shaders::shader! {
+            ty: "vertex",
+            src: "
+				#version 450 core
+				layout(location = 0) in vec2 position;
+				void main() {
+					gl_Position = vec4(position, 0.0, 1.0);
+				}
+			"
+        }
+}
+
+mod fs {
+    vulkano_shaders::shader! {
+            ty: "fragment",
+            src: "
+				#version 450 core
+				layout(location = 0) out vec4 f_color;
+				void main() {
+					f_color = vec4(1.0, 0.0, 0.0, 1.0);
+				}
+			"
+        }
+}
 
 fn main() {
+    let my_maze = maze::GameScene::create();
+    thread::spawn(move || my_maze.run());
+
     let required_extensions = vulkano_win::required_extensions();
     let instance = Instance::new(None, &required_extensions, None).unwrap();
     for i in PhysicalDevice::enumerate(&instance) {
@@ -83,35 +118,9 @@ fn main() {
         )
             .unwrap()
     };
-
     // We now create a buffer that will store the shape of our triangle.
-    let main_menu = MainMenu::create(Arc::clone(&device));
 
-    mod vs {
-        vulkano_shaders::shader! {
-            ty: "vertex",
-            src: "
-				#version 450 core
-				layout(location = 0) in vec2 position;
-				void main() {
-					gl_Position = vec4(position, 0.0, 1.0);
-				}
-			"
-        }
-    }
-
-    mod fs {
-        vulkano_shaders::shader! {
-            ty: "fragment",
-            src: "
-				#version 450 core
-				layout(location = 0) out vec4 f_color;
-				void main() {
-					f_color = vec4(1.0, 0.0, 0.0, 1.0);
-				}
-			"
-        }
-    }
+    let (top, left, width, height) = (0.3, -0.7, 0.4, 0.2);
 
     let vs = vs::Shader::load(Arc::clone(&device)).unwrap();
     let fs = fs::Shader::load(Arc::clone(&device)).unwrap();
@@ -132,7 +141,6 @@ fn main() {
         )
             .unwrap(),
     );
-
     let pipeline = Arc::new(
         GraphicsPipeline::start()
             .vertex_input_single_buffer()
@@ -144,7 +152,6 @@ fn main() {
             .build(Arc::clone(&device))
             .unwrap(),
     );
-
     let mut dynamic_state = DynamicState {
         line_width: None,
         viewports: None,
@@ -153,11 +160,30 @@ fn main() {
         write_mask: None,
         reference: None,
     };
-
     let mut framebuffers =
         window_size_dependent_setup(&images, render_pass.clone(), &mut dynamic_state);
 
     let mut recreate_swapchain = false;
+
+    #[derive(Default, Copy, Clone)]
+    struct Vertex {
+        position: (f32, f32),
+    }
+    vulkano::impl_vertex!(Vertex, position);
+
+    let vb = {
+        CpuAccessibleBuffer::from_iter(
+            Arc::clone(&device),
+            BufferUsage::all(),
+            false,
+            [
+                Vertex { position: (left, top) },
+                Vertex { position: (left + width, top) },
+                Vertex { position: (left + width, top + height) },
+                Vertex { position: (left, top + height) },
+            ].iter().cloned(),
+        ).unwrap()
+    };
 
     let mut previous_frame_end = Some(sync::now(Arc::clone(&device)).boxed());
 
@@ -178,6 +204,7 @@ fn main() {
                     input: KeyboardInput {
                         scancode,
                         state,
+                        virtual_keycode,
                         ..
                     },
                     ..
@@ -187,6 +214,10 @@ fn main() {
                     ElementState::Pressed => "Pressed",
                     ElementState::Released => "Released"
                 });
+                // 按下Esc后退出
+                if let Some(VirtualKeyCode::Escape) = virtual_keycode {
+                    *control_flow = ControlFlow::Exit;
+                }
             }
             Event::RedrawEventsCleared => {
                 previous_frame_end.as_mut().unwrap().cleanup_finished();
@@ -223,26 +254,26 @@ fn main() {
                     recreate_swapchain = true;
                 }
 
-                // Specify the color to clear the framebuffer with i.e. blue
                 let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into()];
 
                 let mut builder = AutoCommandBufferBuilder::primary_one_time_submit(
                     device.clone(),
                     queue.family(),
-                )
-                    .unwrap();
+                ).unwrap();
 
                 builder
-                    .begin_render_pass(framebuffers[image_num].clone(), false, clear_values)
-                    .unwrap()
+                    .begin_render_pass(
+                        framebuffers[image_num].clone(),
+                        false,
+                        clear_values,
+                    ).unwrap()
                     .draw(
                         pipeline.clone(),
                         &dynamic_state,
-                        main_menu.draw(),
+                        vb.clone(),
                         (),
                         (),
-                    )
-                    .unwrap()
+                    ).unwrap()
                     .end_render_pass()
                     .unwrap();
 

@@ -10,12 +10,17 @@
   </component>
   <component name="CargoProjects">
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
+    <cargoProject FILE="$PROJECT_DIR$/src/Tanktrouble/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main_menu.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/maze.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/OpenTanktrouble.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/OpenTanktrouble.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main_menu.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,6 +110,12 @@
       <workItem from="1609402154143" duration="5261000" />
       <workItem from="1609440003907" duration="2186000" />
       <workItem from="1609523166699" duration="1683000" />
+      <workItem from="1609563850886" duration="7944000" />
+      <workItem from="1609605336734" duration="46000" />
+      <workItem from="1609688789279" duration="1974000" />
+      <workItem from="1609736914081" duration="19633000" />
+      <workItem from="1609819660025" duration="13487000" />
+      <workItem from="1609840903558" duration="858000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
