@@ -14,15 +14,17 @@ pub struct GameScene {
     ///
     simulate_seq_num: i32,
     tanks: Vec<Tank>,
-    physical: Arc<Mutex<(
-        IntegrationParameters,
-        BroadPhase,
-        NarrowPhase,
-        RigidBodySet,
-        ColliderSet,
-        JointSet,
-    )>>,
+    physical: Arc<Mutex<PhysicalStatus>>,
 }
+
+type PhysicalStatus = (
+    IntegrationParameters,
+    BroadPhase,
+    NarrowPhase,
+    RigidBodySet,
+    ColliderSet,
+    JointSet,
+);
 
 
 impl GameScene {
@@ -79,7 +81,7 @@ impl GameScene {
         for tank in self.tanks.iter() {
             let (rot, acl) = tank.controller.status();
             let mut right_body = &self.physical.lock().unwrap().3[tank.physical_handle];
-            //println!("{}", right_body.linvel())
+            println!("{}", right_body.linvel())
         }
     }
 }

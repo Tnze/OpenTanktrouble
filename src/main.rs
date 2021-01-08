@@ -1,9 +1,15 @@
 mod main_menu;
 mod maze;
 
+use std::{
+    sync::Arc,
+    thread,
+    time::Instant,
+};
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer},
+    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
+    descriptor::descriptor_set::PersistentDescriptorSet,
     device::{Device, DeviceExtensions},
     framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass},
     image::{ImageUsage, SwapchainImage},
@@ -20,14 +26,11 @@ use vulkano::{
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
-    event::{Event, WindowEvent, KeyboardInput, ElementState},
+    event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder, Fullscreen},
 };
-
-use std::sync::Arc;
-use std::thread;
-use winit::event::VirtualKeyCode;
+use cgmath::Vector2;
 
 
 mod vs {
@@ -35,9 +38,13 @@ mod vs {
             ty: "vertex",
             src: "
 				#version 450 core
+				layout(set = 0, binding = 0) uniform Data {
+                    vec2 trans;
+                } uniforms;
 				layout(location = 0) in vec2 position;
+
 				void main() {
-					gl_Position = vec4(position, 0.0, 1.0);
+					gl_Position = vec4(position + uniforms.trans, 0.0, 1.0);
 				}
 			"
         }
@@ -122,6 +129,7 @@ fn main() {
 
     let (top, left, width, height) = (0.3, -0.7, 0.4, 0.2);
 
+    let uniform_buffer = CpuBufferPool::<vs::ty::Data>::new(device.clone(), BufferUsage::all());
     let vs = vs::Shader::load(Arc::clone(&device)).unwrap();
     let fs = fs::Shader::load(Arc::clone(&device)).unwrap();
 
@@ -187,6 +195,7 @@ fn main() {
         ).unwrap()
     };
 
+    let time_start = Instant::now();
     let mut previous_frame_end = Some(sync::now(Arc::clone(&device)).boxed());
 
     event_loop.run(move |event, _, control_flow| {
@@ -242,6 +251,28 @@ fn main() {
                     recreate_swapchain = false;
                 }
 
+                let uniform_buffer_subbuffer = {
+                    let elapsed = time_start.elapsed();
+                    let elapsed = elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000.0;
+                    let trans = Vector2::new(0.5+elapsed.sin()*0.5, -0.5+elapsed.cos()*0.5);
+                    let uniform_data = vs::ty::Data {
+                        trans: trans.into(),
+                    };
+
+
+                    uniform_buffer.next(uniform_data).unwrap()
+                };
+
+
+                let layout = pipeline.layout().descriptor_set_layout(0).unwrap();
+                let set = Arc::new(
+                    PersistentDescriptorSet::start(layout.clone())
+                        .add_buffer(uniform_buffer_subbuffer)
+                        .unwrap()
+                        .build()
+                        .unwrap(),
+                );
+
                 let (image_num, suboptimal, acquire_future) =
                     match swapchain::acquire_next_image(swapchain.clone(), None) {
                         Ok(r) => r,
@@ -273,7 +304,7 @@ fn main() {
                         pipeline.clone(),
                         &dynamic_state,
                         vb.clone(),
-                        (),
+                        set.clone(),
                         (),
                     ).unwrap()
                     .end_render_pass()
