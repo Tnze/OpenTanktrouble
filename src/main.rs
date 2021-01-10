@@ -1,10 +1,13 @@
 mod main_menu;
 mod maze;
+mod keyboard_controller;
 
 use std::{
     sync::Arc,
     thread,
     time::Instant,
+    cell::RefCell,
+    rc::Rc,
 };
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
@@ -31,6 +34,8 @@ use winit::{
     window::{Window, WindowBuilder, Fullscreen},
 };
 use cgmath::Vector2;
+use crate::keyboard_controller::KeyboardController;
+use crate::maze::Controller;
 
 
 mod vs {
@@ -198,6 +203,19 @@ fn main() {
     let time_start = Instant::now();
     let mut previous_frame_end = Some(sync::now(Arc::clone(&device)).boxed());
 
+    let mut keyboard_controller = Rc::new(RefCell::new(
+        keyboard_controller::KeyboardController::new()
+    ));
+    let sub_controller = KeyboardController::create_sub_controller(
+        &keyboard_controller,
+        [
+            keyboard_controller::Key::LogicKey(VirtualKeyCode::W),
+            keyboard_controller::Key::LogicKey(VirtualKeyCode::S),
+            keyboard_controller::Key::LogicKey(VirtualKeyCode::A),
+            keyboard_controller::Key::LogicKey(VirtualKeyCode::D),
+        ],
+    );
+
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::WindowEvent {
@@ -212,21 +230,14 @@ fn main() {
             }
             Event::WindowEvent {
                 event: WindowEvent::KeyboardInput {
-                    input: KeyboardInput {
-                        scancode,
-                        state,
-                        virtual_keycode,
-                        ..
-                    },
-                    ..
+                    input, ..
                 }, ..
             } => {
-                println!("Keyboard Input Event: {} {}", scancode, match state {
-                    ElementState::Pressed => "Pressed",
-                    ElementState::Released => "Released"
-                });
+                keyboard_controller.borrow_mut().input_event(&input);
                 // 按下Esc后退出
-                if let Some(VirtualKeyCode::Escape) = virtual_keycode {
+                if let KeyboardInput {
+                    virtual_keycode: Some(VirtualKeyCode::Escape), ..
+                } = input {
                     *control_flow = ControlFlow::Exit;
                 }
             }
@@ -254,11 +265,10 @@ fn main() {
                 let uniform_buffer_subbuffer = {
                     let elapsed = time_start.elapsed();
                     let elapsed = elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000.0;
-                    let trans = Vector2::new(0.5+elapsed.sin()*0.5, -0.5+elapsed.cos()*0.5);
+                    let trans = Vector2::new(0.5 + elapsed.sin() * 0.5, -0.5 + elapsed.cos() * 0.5);
                     let uniform_data = vs::ty::Data {
                         trans: trans.into(),
                     };
-
 
                     uniform_buffer.next(uniform_data).unwrap()
                 };
