@@ -1,14 +1,11 @@
+mod keyboard_controller;
 mod main_menu;
 mod maze;
-mod keyboard_controller;
 
-use std::{
-    sync::Arc,
-    thread,
-    time::Instant,
-    cell::RefCell,
-    rc::Rc,
-};
+use crate::keyboard_controller::{KeyboardController, Key::{LogicKey, PhysicKey}};
+use cgmath::Vector2;
+use std::sync::Mutex;
+use std::{sync::Arc, thread, time::Instant};
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
@@ -20,8 +17,7 @@ use vulkano::{
     pipeline::{viewport::Viewport, GraphicsPipeline},
     swapchain,
     swapchain::{
-        AcquireError, ColorSpace, FullscreenExclusive,
-        PresentMode, SurfaceTransform, Swapchain,
+        AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
         SwapchainCreationError,
     },
     sync,
@@ -29,19 +25,15 @@ use vulkano::{
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
-    event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode},
+    event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Window, WindowBuilder, Fullscreen},
+    window::{Fullscreen, Window, WindowBuilder},
 };
-use cgmath::Vector2;
-use crate::keyboard_controller::KeyboardController;
-use crate::maze::Controller;
-
 
 mod vs {
     vulkano_shaders::shader! {
-            ty: "vertex",
-            src: "
+        ty: "vertex",
+        src: "
 				#version 450 core
 				layout(set = 0, binding = 0) uniform Data {
                     vec2 trans;
@@ -52,26 +44,23 @@ mod vs {
 					gl_Position = vec4(position + uniforms.trans, 0.0, 1.0);
 				}
 			"
-        }
+    }
 }
 
 mod fs {
     vulkano_shaders::shader! {
-            ty: "fragment",
-            src: "
+        ty: "fragment",
+        src: "
 				#version 450 core
 				layout(location = 0) out vec4 f_color;
 				void main() {
 					f_color = vec4(1.0, 0.0, 0.0, 1.0);
 				}
 			"
-        }
+    }
 }
 
 fn main() {
-    let my_maze = maze::GameScene::create();
-    thread::spawn(move || my_maze.run());
-
     let required_extensions = vulkano_win::required_extensions();
     let instance = Instance::new(None, &required_extensions, None).unwrap();
     for i in PhysicalDevice::enumerate(&instance) {
@@ -99,7 +88,8 @@ fn main() {
             physical.supported_features(),
             &device_ext,
             [(queue_family, 0.5)].iter().cloned(),
-        ).unwrap()
+        )
+            .unwrap()
     };
 
     let queue = queues.next().unwrap();
@@ -196,48 +186,62 @@ fn main() {
                 Vertex { position: (left, top) },
                 Vertex { position: (left + width, top + height) },
                 Vertex { position: (left, top + height) },
-            ].iter().cloned(),
-        ).unwrap()
+            ]
+                .iter()
+                .cloned(),
+        )
+            .unwrap()
     };
 
     let time_start = Instant::now();
     let mut previous_frame_end = Some(sync::now(Arc::clone(&device)).boxed());
 
-    let mut keyboard_controller = Rc::new(RefCell::new(
-        keyboard_controller::KeyboardController::new()
-    ));
-    let sub_controller = KeyboardController::create_sub_controller(
+    // 初始化键盘控制器
+    let keyboard_controller = Arc::new(Mutex::new(keyboard_controller::KeyboardController::new()));
+
+    let sub_controller = Box::new(KeyboardController::create_sub_controller(
         &keyboard_controller,
         [
-            keyboard_controller::Key::LogicKey(VirtualKeyCode::W),
-            keyboard_controller::Key::LogicKey(VirtualKeyCode::S),
-            keyboard_controller::Key::LogicKey(VirtualKeyCode::A),
-            keyboard_controller::Key::LogicKey(VirtualKeyCode::D),
+            LogicKey(VirtualKeyCode::E),
+            LogicKey(VirtualKeyCode::D),
+            LogicKey(VirtualKeyCode::S),
+            LogicKey(VirtualKeyCode::F),
         ],
-    );
+    ));
+
+    let mut my_maze = maze::GameScene::create();
+    my_maze.add_tank(sub_controller);
+    let my_maze = Arc::new(my_maze);
+    {
+        let my_maze = Arc::clone(&my_maze);
+        thread::spawn(move || my_maze.run_physic());
+    }
 
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::WindowEvent {
-                event: WindowEvent::CloseRequested, ..
+                event: WindowEvent::CloseRequested,
+                ..
             } => {
                 *control_flow = ControlFlow::Exit;
             }
             Event::WindowEvent {
-                event: WindowEvent::Resized(_), ..
+                event: WindowEvent::Resized(_),
+                ..
             } => {
                 recreate_swapchain = true;
             }
             Event::WindowEvent {
-                event: WindowEvent::KeyboardInput {
-                    input, ..
-                }, ..
+                event: WindowEvent::KeyboardInput { input, .. },
+                ..
             } => {
-                keyboard_controller.borrow_mut().input_event(&input);
+                keyboard_controller.lock().unwrap().input_event(&input);
                 // 按下Esc后退出
                 if let KeyboardInput {
-                    virtual_keycode: Some(VirtualKeyCode::Escape), ..
-                } = input {
+                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                    ..
+                } = input
+                {
                     *control_flow = ControlFlow::Exit;
                 }
             }
@@ -264,7 +268,8 @@ fn main() {
 
                 let uniform_buffer_subbuffer = {
                     let elapsed = time_start.elapsed();
-                    let elapsed = elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000.0;
+                    let elapsed =
+                        elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000.0;
                     let trans = Vector2::new(0.5 + elapsed.sin() * 0.5, -0.5 + elapsed.cos() * 0.5);
                     let uniform_data = vs::ty::Data {
                         trans: trans.into(),
@@ -272,7 +277,6 @@ fn main() {
 
                     uniform_buffer.next(uniform_data).unwrap()
                 };
-
 
                 let layout = pipeline.layout().descriptor_set_layout(0).unwrap();
                 let set = Arc::new(
@@ -302,23 +306,13 @@ fn main() {
                 let mut builder = AutoCommandBufferBuilder::primary_one_time_submit(
                     device.clone(),
                     queue.family(),
-                ).unwrap();
-
-                builder
-                    .begin_render_pass(
-                        framebuffers[image_num].clone(),
-                        false,
-                        clear_values,
-                    ).unwrap()
-                    .draw(
-                        pipeline.clone(),
-                        &dynamic_state,
-                        vb.clone(),
-                        set.clone(),
-                        (),
-                    ).unwrap()
-                    .end_render_pass()
+                )
                     .unwrap();
+
+                builder.begin_render_pass(framebuffers[image_num].clone(), false, clear_values).unwrap();
+                my_maze.draw(&mut builder, pipeline.clone(), &dynamic_state, vb.clone(), set.clone()).unwrap();
+                builder.end_render_pass().unwrap();
+
 
                 // Finish building the command buffer by calling `build`.
                 let command_buffer = builder.build().unwrap();

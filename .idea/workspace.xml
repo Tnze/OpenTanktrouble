@@ -14,8 +14,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main_menu.rs" afterDir="false" />
@@ -98,7 +99,7 @@
       </method>
     </configuration>
     <configuration name="Run" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
-      <option name="command" value="run --package OpenTanktrouble --bin OpenTanktrouble" />
+      <option name="command" value="run --package open_tanktrouble --bin open_tanktrouble" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="allFeatures" value="false" />
@@ -149,7 +150,7 @@
       <workItem from="1609840903558" duration="858000" />
       <workItem from="1610093945136" duration="7456000" />
       <workItem from="1610156924415" duration="2186000" />
-      <workItem from="1610263890248" duration="22463000" />
+      <workItem from="1610263890248" duration="28609000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -179,7 +180,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610272858891</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Add README.md">
+      <created>1610292454396</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1610292454397</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -191,6 +199,7 @@
     <MESSAGE value="Fix triangle fans not support error on MacOS" />
     <MESSAGE value="Make the RECT roll" />
     <MESSAGE value="Setup keyboard event handler" />
-    <option name="LAST_COMMIT_MESSAGE" value="Setup keyboard event handler" />
+    <MESSAGE value="Add README.md" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add README.md" />
   </component>
 </project>

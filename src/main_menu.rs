@@ -1,4 +1,1 @@
-
-pub struct MainMenu {
-}
-
+pub struct MainMenu {}

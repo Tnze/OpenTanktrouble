@@ -1,10 +1,8 @@
 use crate::maze::Controller;
-use winit::event::{KeyboardInput, VirtualKeyCode, ElementState, ScanCode};
-use std::collections::HashMap;
-use std::rc::Rc;
 use std::cell::RefCell;
-use std::fmt::{Display, Formatter};
-use std::borrow::Borrow;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use winit::event::{ElementState, KeyboardInput, ScanCode, VirtualKeyCode};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -19,7 +17,7 @@ pub struct KeyboardController {
 impl KeyboardController {
     pub fn new() -> KeyboardController {
         KeyboardController {
-            key_map: HashMap::new()
+            key_map: HashMap::new(),
         }
     }
     pub fn input_event(&mut self, e: &KeyboardInput) {
@@ -27,49 +25,45 @@ impl KeyboardController {
             KeyboardInput {
                 scancode,
                 virtual_keycode,
-                state, ..
+                state,
+                ..
             } => {
-                self.key_map.insert(match virtual_keycode {
-                    Some(vk) => Key::LogicKey(*vk),
-                    None => Key::PhysicKey(*scancode),
-                }, *state)
+                self.key_map.insert(Key::PhysicKey(*scancode), *state);
+                if let Some(code) = virtual_keycode {
+                    self.key_map.insert(Key::LogicKey(*code), *state);
+                }
             }
         };
     }
 }
 
 impl KeyboardController {
-    pub fn create_sub_controller(parent: &Rc<RefCell<KeyboardController>>, keys: [Key; 4]) -> SubKeyboardController {
+    pub fn create_sub_controller(
+        parent: &Arc<Mutex<KeyboardController>>,
+        movement_keys: [Key; 4],
+    ) -> SubKeyboardController {
         SubKeyboardController {
-            keys,
-            parent: Rc::clone(parent),
+            movement_keys,
+            parent: Arc::clone(parent),
         }
     }
 }
 
 pub struct SubKeyboardController {
-    keys: [Key; 4],
-    parent: Rc<RefCell<KeyboardController>>,
-}
-
-impl SubKeyboardController {}
-
-#[inline]
-fn pressed_or_default<T>(state: Option<&ElementState>, pressed: T, otherwise: T) -> T {
-    match state {
-        Some(ElementState::Pressed) => pressed,
-        _ => otherwise,
-    }
+    movement_keys: [Key; 4],
+    parent: Arc<Mutex<KeyboardController>>,
 }
 
 impl Controller for SubKeyboardController {
-    fn status(&self) -> (f64, f64) {
-        let parent = &self.parent.borrow_mut().key_map;
+    fn movement_status(&self) -> (f64, f64) {
+        let parent = &self.parent.lock().unwrap().key_map;
+        let get_value = |key, pressed| match parent.get(&self.movement_keys[key]) {
+            Some(ElementState::Pressed) => pressed,
+            _ => 0.0
+        };
         (
-            0.0 + pressed_or_default(parent.get(&self.keys[2]), 1.0, 0.0)
-                - pressed_or_default(parent.get(&self.keys[3]), 1.0, 0.0),
-            0.0 + pressed_or_default(parent.get(&self.keys[0]), 1.0, 0.0)
-                - pressed_or_default(parent.get(&self.keys[1]), 0.6, 0.0),
+            get_value(2, 1.0) - get_value(3, 1.0),
+            get_value(0, 1.0) - get_value(1, 0.6),
         )
     }
 }
