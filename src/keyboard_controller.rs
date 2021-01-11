@@ -1,5 +1,4 @@
 use crate::maze::Controller;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use winit::event::{ElementState, KeyboardInput, ScanCode, VirtualKeyCode};

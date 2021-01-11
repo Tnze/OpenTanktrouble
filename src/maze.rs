@@ -4,29 +4,26 @@ use rapier2d::{
         RigidBodySet,
     },
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
-    na::{Vector, Vector2},
+    na::Vector2,
     pipeline::PhysicsPipeline,
 };
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use std::{thread, time};
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool, BufferAccess};
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool};
 use vulkano::command_buffer::pool::standard::StandardCommandPoolBuilder;
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DrawError, DynamicState};
-use vulkano::descriptor::descriptor_set::{DescriptorSetsCollection, PersistentDescriptorSet};
+use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
 use vulkano::device::Device;
 use vulkano::format::Format;
-use vulkano::framebuffer::{Subpass, RenderPass, RenderPassDesc, RenderPassAbstract};
-use vulkano::pipeline::vertex::{VertexSource, SingleBufferDefinition};
+use vulkano::framebuffer::{Subpass, RenderPassAbstract};
 use vulkano::pipeline::GraphicsPipeline;
 use vulkano::pipeline::GraphicsPipelineAbstract;
 use vulkano::descriptor::PipelineLayoutAbstract;
-use vulkano::SafeDeref;
 
 pub struct GameScene {
     tanks: Vec<Tank>,
     physical: Arc<Mutex<PhysicalStatus>>,
-    pub(crate) render: Mutex<RenderObjects>,
+    pub(crate) render: Arc<Mutex<RenderObjects>>,
 }
 
 struct PhysicalStatus {
@@ -119,7 +116,7 @@ impl GameScene {
 
         let (top, left, width, height) = (0.3, -0.7, 0.4, 0.2);
         let uniform_buffer = CpuBufferPool::<vs::ty::Data>::new(device.clone(), BufferUsage::all());
-        let mut dynamic_state = DynamicState {
+        let dynamic_state = DynamicState {
             line_width: None,
             viewports: None,
             scissors: None,
@@ -159,13 +156,13 @@ impl GameScene {
                 collider_set: ColliderSet::new(),
                 joint_set: JointSet::new(),
             })),
-            render: Mutex::new(RenderObjects {
+            render: Arc::new(Mutex::new(RenderObjects {
                 dynamic_state,
                 pipeline,
                 uniform_buffer,
                 render_pass,
                 vertex_buffer,
-            }),
+            })),
         }
     }
 

@@ -3,18 +3,15 @@ mod main_menu;
 mod maze;
 
 use crate::keyboard_controller::{KeyboardController, Key::{LogicKey, PhysicKey}};
-use cgmath::Vector2;
 use std::sync::Mutex;
-use std::{sync::Arc, thread, time::Instant};
+use std::{sync::Arc, thread};
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
-    descriptor::descriptor_set::PersistentDescriptorSet,
     device::{Device, DeviceExtensions},
-    framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass},
+    framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract},
     image::{ImageUsage, SwapchainImage},
     instance::{Instance, PhysicalDevice},
-    pipeline::{viewport::Viewport, GraphicsPipeline},
+    pipeline::viewport::Viewport,
     swapchain,
     swapchain::{
         AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
@@ -104,7 +101,6 @@ fn main() {
 
     let mut recreate_swapchain = false;
 
-    let time_start = Instant::now();
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
     // 初始化键盘控制器
@@ -166,7 +162,7 @@ fn main() {
                             Err(SwapchainCreationError::UnsupportedDimensions) => return,
                             Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
                         };
-
+                    swapchain = new_swapchain;
                     framebuffers = {
                         let render = &mut *my_maze.render.lock().unwrap();
                         window_size_dependent_setup(

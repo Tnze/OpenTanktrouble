@@ -13,8 +13,9 @@
     <cargoProject FILE="$PROJECT_DIR$/src/Tanktrouble/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="It's ready to compile">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/maze.rs" afterDir="false" />
     </list>
@@ -47,6 +48,9 @@
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="u5vv9nsg" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedIndex" value="1" />
   </component>
   <component name="ProjectId" id="1mBshPY1uJfziLMT3tDLBm7KdcL" />
   <component name="ProjectLevelVcsManager">
@@ -101,6 +105,11 @@
       <option name="redirectInputPath" value="" />
       <method v="2">
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <list>
@@ -185,7 +194,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610301293168</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="It's ready to compile">
+      <created>1610358613678</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1610358613678</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -199,6 +215,7 @@
     <MESSAGE value="Setup keyboard event handler" />
     <MESSAGE value="Add README.md" />
     <MESSAGE value="Render proc in Maze object" />
-    <option name="LAST_COMMIT_MESSAGE" value="Render proc in Maze object" />
+    <MESSAGE value="It's ready to compile" />
+    <option name="LAST_COMMIT_MESSAGE" value="It's ready to compile" />
   </component>
 </project>
