@@ -13,7 +13,7 @@
     <cargoProject FILE="$PROJECT_DIR$/src/Tanktrouble/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="It's ready to compile">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
@@ -201,7 +201,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610358613678</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Fix some warnings">
+      <created>1610360087765</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1610360087765</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -216,6 +223,7 @@
     <MESSAGE value="Add README.md" />
     <MESSAGE value="Render proc in Maze object" />
     <MESSAGE value="It's ready to compile" />
-    <option name="LAST_COMMIT_MESSAGE" value="It's ready to compile" />
+    <MESSAGE value="Fix some warnings" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix some warnings" />
   </component>
 </project>

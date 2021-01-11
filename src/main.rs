@@ -1,10 +1,8 @@
-mod keyboard_controller;
-mod main_menu;
-mod maze;
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
 
-use crate::keyboard_controller::{KeyboardController, Key::{LogicKey, PhysicKey}};
-use std::sync::Mutex;
-use std::{sync::Arc, thread};
 use vulkano::{
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
     device::{Device, DeviceExtensions},
@@ -12,13 +10,11 @@ use vulkano::{
     image::{ImageUsage, SwapchainImage},
     instance::{Instance, PhysicalDevice},
     pipeline::viewport::Viewport,
-    swapchain,
     swapchain::{
-        AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
-        SwapchainCreationError,
+        self, AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform,
+        Swapchain, SwapchainCreationError,
     },
-    sync,
-    sync::{FlushError, GpuFuture},
+    sync::{self, FlushError, GpuFuture},
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
@@ -27,6 +23,15 @@ use winit::{
     window::{Fullscreen, Window, WindowBuilder},
 };
 
+use crate::keyboard_controller::{
+    Key::{LogicKey, PhysicKey},
+    KeyboardController,
+};
+
+mod keyboard_controller;
+mod main_menu;
+mod maze;
+
 fn main() {
     let required_extensions = vulkano_win::required_extensions();
     let instance = Instance::new(None, &required_extensions, None).unwrap();
@@ -34,7 +39,11 @@ fn main() {
         println!("Device: {}", i.name());
     }
     let physical = PhysicalDevice::enumerate(&instance).next().unwrap();
-    println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
+    println!(
+        "Using device: {} (type: {:?})",
+        physical.name(),
+        physical.ty()
+    );
 
     let event_loop = EventLoop::new();
     let surface = WindowBuilder::new()
@@ -89,14 +98,15 @@ fn main() {
     };
     // We now create a buffer that will store the shape of our triangle.
 
-    let mut my_maze = maze::GameScene::create(
-        device.clone(),
-        swapchain.format(),
-    );
+    let mut my_maze = maze::GameScene::create(device.clone(), swapchain.format());
 
     let mut framebuffers = {
         let render = &mut *my_maze.render.lock().unwrap();
-        window_size_dependent_setup(&images, render.render_pass.clone(), &mut render.dynamic_state)
+        window_size_dependent_setup(
+            &images,
+            render.render_pass.clone(),
+            &mut render.dynamic_state,
+        )
     };
 
     let mut recreate_swapchain = false;
@@ -174,7 +184,6 @@ fn main() {
                     recreate_swapchain = false;
                 }
 
-
                 let (image_num, suboptimal, acquire_future) =
                     match swapchain::acquire_next_image(swapchain.clone(), None) {
                         Ok(r) => r,
@@ -197,10 +206,11 @@ fn main() {
                 )
                     .unwrap();
 
-                builder.begin_render_pass(framebuffers[image_num].clone(), false, clear_values).unwrap();
+                builder
+                    .begin_render_pass(framebuffers[image_num].clone(), false, clear_values)
+                    .unwrap();
                 my_maze.draw(&mut builder).unwrap();
                 builder.end_render_pass().unwrap();
-
 
                 // Finish building the command buffer by calling `build`.
                 let command_buffer = builder.build().unwrap();

@@ -1,7 +1,9 @@
-use crate::maze::Controller;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+
 use winit::event::{ElementState, KeyboardInput, ScanCode, VirtualKeyCode};
+
+use crate::maze::Controller;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Key {
@@ -58,7 +60,7 @@ impl Controller for SubKeyboardController {
         let parent = &self.parent.lock().unwrap().key_map;
         let get_value = |key, pressed| match parent.get(&self.movement_keys[key]) {
             Some(ElementState::Pressed) => pressed,
-            _ => 0.0
+            _ => 0.0,
         };
         (
             get_value(2, 1.0) - get_value(3, 1.0),

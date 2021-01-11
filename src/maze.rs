@@ -1,3 +1,8 @@
+use std::{
+    sync::{Arc, Mutex},
+    thread, time,
+};
+
 use rapier2d::{
     dynamics::{
         BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle,
@@ -7,18 +12,18 @@ use rapier2d::{
     na::Vector2,
     pipeline::PhysicsPipeline,
 };
-use std::sync::{Arc, Mutex};
-use std::{thread, time};
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool};
-use vulkano::command_buffer::pool::standard::StandardCommandPoolBuilder;
-use vulkano::command_buffer::{AutoCommandBufferBuilder, DrawError, DynamicState};
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
-use vulkano::device::Device;
-use vulkano::format::Format;
-use vulkano::framebuffer::{Subpass, RenderPassAbstract};
-use vulkano::pipeline::GraphicsPipeline;
-use vulkano::pipeline::GraphicsPipelineAbstract;
-use vulkano::descriptor::PipelineLayoutAbstract;
+use vulkano::{
+    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
+    command_buffer::{
+        AutoCommandBufferBuilder, DrawError, DynamicState,
+        pool::standard::StandardCommandPoolBuilder,
+    },
+    descriptor::{descriptor_set::PersistentDescriptorSet, PipelineLayoutAbstract},
+    device::Device,
+    format::Format,
+    framebuffer::{RenderPassAbstract, Subpass},
+    pipeline::{GraphicsPipeline, GraphicsPipelineAbstract},
+};
 
 pub struct GameScene {
     tanks: Vec<Tank>,
@@ -42,7 +47,7 @@ pub struct RenderObjects {
     pub(crate) dynamic_state: DynamicState,
     pub(crate) pipeline: Arc<dyn GraphicsPipelineAbstract + Send + Sync>,
     pub(crate) render_pass: Arc<dyn RenderPassAbstract + Send + Sync>,
-    uniform_buffer: CpuBufferPool::<vs::ty::Data>,
+    uniform_buffer: CpuBufferPool<vs::ty::Data>,
     vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
 }
 
@@ -100,7 +105,8 @@ impl GameScene {
                     }
                 },
                 pass: {color: [color],  depth_stencil: {}}
-            ).unwrap(),
+            )
+                .unwrap(),
         ));
         let pipeline = Arc::new(
             GraphicsPipeline::start()
@@ -125,19 +131,30 @@ impl GameScene {
             reference: None,
         };
 
-
         let vertex_buffer = {
             CpuAccessibleBuffer::from_iter(
                 device.clone(),
                 BufferUsage::all(),
                 false,
                 [
-                    Vertex { position: (left, top) },
-                    Vertex { position: (left + width, top) },
-                    Vertex { position: (left + width, top + height) },
-                    Vertex { position: (left, top) },
-                    Vertex { position: (left + width, top + height) },
-                    Vertex { position: (left, top + height) },
+                    Vertex {
+                        position: (left, top),
+                    },
+                    Vertex {
+                        position: (left + width, top),
+                    },
+                    Vertex {
+                        position: (left + width, top + height),
+                    },
+                    Vertex {
+                        position: (left, top),
+                    },
+                    Vertex {
+                        position: (left + width, top + height),
+                    },
+                    Vertex {
+                        position: (left, top + height),
+                    },
                 ]
                     .iter()
                     .cloned(),
