@@ -120,7 +120,7 @@ impl GameScene {
                 .unwrap(),
         );
 
-        let (top, left, width, height) = (0.3, -0.7, 0.4, 0.2);
+        let (top, left, width, height) = (-0.3, -0.3, 0.6, 0.6);
         let uniform_buffer = CpuBufferPool::<vs::ty::Data>::new(device.clone(), BufferUsage::all());
         let dynamic_state = DynamicState {
             line_width: None,
@@ -184,7 +184,7 @@ impl GameScene {
     }
 
     /// 添加一个控制器
-    pub fn add_tank(&mut self, controller: Box<dyn Controller + Send + Sync>) {
+    pub fn add_tank(&mut self, controller: Box<dyn Controller>) {
         let right_body = RigidBodyBuilder::new(BodyStatus::Dynamic)
             .can_sleep(true)
             .build();
@@ -242,11 +242,8 @@ impl GameScene {
     ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
         let render = &mut *self.render.lock().unwrap();
         let uniform_buffer_subbuffer = {
-            // let elapsed = time_start.elapsed();
-            // let elapsed =
-            //     elapsed.as_secs() as f32 + elapsed.subsec_nanos() as f32 / 1_000_000_000.0;
-            // let trans = Vector2::new(0.5 + elapsed.sin() * 0.5, -0.5 + elapsed.cos() * 0.5);
-            let trans = Vector2::new(0.0, 0.0);
+            let (rot, acl) = self.tanks[0].controller.movement_status();
+            let trans = Vector2::new(rot as f32, acl as f32);
             let uniform_data = vs::ty::Data {
                 trans: trans.into(),
             };
@@ -279,6 +276,6 @@ pub trait Controller {
 }
 
 struct Tank {
-    controller: Box<dyn Controller + Send + Sync>,
+    controller: Box<dyn Controller>,
     physical_handle: RigidBodyHandle,
 }

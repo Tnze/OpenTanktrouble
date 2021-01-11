@@ -14,6 +14,7 @@ vulkano = "0.19"
 vulkano-win = "0.19"
 vulkano-shaders = "0.19.0"
 winit = "0.22"
+gilrs = "0.8.0"
 rapier2d = { version = "0.4.2", features = ["enhanced-determinism"] }
 
 png = "0.15.0"

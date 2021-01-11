@@ -3,6 +3,7 @@ use std::{
     thread,
 };
 
+use gilrs::Gilrs;
 use vulkano::{
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
     device::{Device, DeviceExtensions},
@@ -23,12 +24,15 @@ use winit::{
     window::{Fullscreen, Window, WindowBuilder},
 };
 
+use crate::gamepad_controller::GamepadController;
 use crate::keyboard_controller::{
     Key::{LogicKey, PhysicKey},
     KeyboardController,
 };
 
 mod keyboard_controller;
+mod gamepad_controller;
+
 mod main_menu;
 mod maze;
 
@@ -126,11 +130,16 @@ fn main() {
         ],
     ));
 
-    my_maze.add_tank(sub_controller);
     let my_maze = Arc::new(my_maze);
     {
-        let my_maze = Arc::clone(&my_maze);
-        thread::spawn(move || my_maze.run_physic());
+        let mut my_maze = Arc::clone(&my_maze);
+        thread::spawn(move || {
+            let mut gilrs = Gilrs::new().unwrap();
+            let gamepad = gilrs.gamepads().next().unwrap().1;
+            let gamepad = Box::new(GamepadController::create_gamepad_controller(gamepad));
+            my_maze.add_tank(gamepad);
+            my_maze.run_physic()
+        });
     }
 
     event_loop.run(move |event, _, control_flow| {
