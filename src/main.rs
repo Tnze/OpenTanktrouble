@@ -97,8 +97,10 @@ fn main() {
         swapchain.format(),
     );
 
-    let mut framebuffers =
-        window_size_dependent_setup(&images, my_maze.render.render_pass.clone(), &mut my_maze.render.dynamic_state);
+    let mut framebuffers = {
+        let render = &mut *my_maze.render.lock().unwrap();
+        window_size_dependent_setup(&images, render.render_pass.clone(), &mut render.dynamic_state)
+    };
 
     let mut recreate_swapchain = false;
 
@@ -165,12 +167,14 @@ fn main() {
                             Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
                         };
 
-                    swapchain = new_swapchain;
-                    framebuffers = window_size_dependent_setup(
-                        &new_images,
-                        my_maze.render.render_pass.clone(),
-                        &mut my_maze.render.dynamic_state,
-                    );
+                    framebuffers = {
+                        let render = &mut *my_maze.render.lock().unwrap();
+                        window_size_dependent_setup(
+                            &new_images,
+                            render.render_pass.clone(),
+                            &mut render.dynamic_state,
+                        )
+                    };
                     recreate_swapchain = false;
                 }
 
