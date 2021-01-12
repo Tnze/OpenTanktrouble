@@ -1,25 +1,25 @@
 use std::sync::{Arc, Mutex};
 
-use crate::maze::Controller;
+use gilrs::{GamepadId, Gilrs};
 
-pub struct GamepadController<'a> {
-    gamepad: Mutex<gilrs::Gamepad<'a>>
+pub struct GamepadController {
+    gamepad: gilrs::GamepadId,
 }
 
-impl GamepadController<'_> {
-    pub fn create_gamepad_controller(gamepad: gilrs::Gamepad) -> GamepadController {
+impl GamepadController {
+    pub fn create_gamepad_controller(gamepad: GamepadId) -> GamepadController {
         GamepadController {
-            gamepad: Mutex::new(gamepad)
+            gamepad,
         }
     }
 }
 
-impl Controller for GamepadController<'_> {
-    fn movement_status(&self) -> (f64, f64) {
-        let gamepad = &*self.gamepad.lock().unwrap();
+impl GamepadController {
+    pub(crate) fn movement_status(&self, gilrs: &Gilrs) -> (f32, f32) {
+        let gamepad = gilrs.gamepad(self.gamepad);
         (
-            gamepad.axis_data(gilrs::Axis::LeftStickX).unwrap().value() as f64,
-            gamepad.axis_data(gilrs::Axis::LeftStickY).unwrap().value() as f64,
+            gamepad.axis_data(gilrs::Axis::LeftStickY).map_or(0.0, |x| x.value()),
+            gamepad.axis_data(gilrs::Axis::LeftStickX).map_or(0.0, |x| x.value()),
         )
     }
 }

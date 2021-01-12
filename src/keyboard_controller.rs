@@ -3,8 +3,6 @@ use std::sync::{Arc, Mutex};
 
 use winit::event::{ElementState, KeyboardInput, ScanCode, VirtualKeyCode};
 
-use crate::maze::Controller;
-
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Key {
     LogicKey(VirtualKeyCode),
@@ -55,8 +53,8 @@ pub struct SubKeyboardController {
     parent: Arc<Mutex<KeyboardController>>,
 }
 
-impl Controller for SubKeyboardController {
-    fn movement_status(&self) -> (f64, f64) {
+impl SubKeyboardController {
+    pub(crate) fn movement_status(&self) -> (f32, f32) {
         let parent = &self.parent.lock().unwrap().key_map;
         let get_value = |key, pressed| match parent.get(&self.movement_keys[key]) {
             Some(ElementState::Pressed) => pressed,

@@ -13,10 +13,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/gamepad_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/gamepad_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/maze.rs" afterDir="false" />
@@ -85,7 +84,7 @@
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
     <property name="settings.editor.selected.configurable" value="CPPToolchains" />
   </component>
-  <component name="RunManager" selected="Cargo.Check">
+  <component name="RunManager" selected="Cargo.Run">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -112,11 +111,6 @@
       <option name="redirectInputPath" value="" />
       <method v="2">
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
     <list>
@@ -158,6 +152,7 @@
       <workItem from="1610093945136" duration="7456000" />
       <workItem from="1610156924415" duration="2186000" />
       <workItem from="1610263890248" duration="40364000" />
+      <workItem from="1610428305105" duration="7355000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>

@@ -3,7 +3,6 @@ use std::{
     thread,
 };
 
-use gilrs::Gilrs;
 use vulkano::{
     command_buffer::{AutoCommandBufferBuilder, DynamicState},
     device::{Device, DeviceExtensions},
@@ -29,6 +28,7 @@ use crate::keyboard_controller::{
     Key::{LogicKey, PhysicKey},
     KeyboardController,
 };
+use crate::maze::Controller::Gamepad;
 
 mod keyboard_controller;
 mod gamepad_controller;
@@ -120,7 +120,7 @@ fn main() {
     // 初始化键盘控制器
     let keyboard_controller = Arc::new(Mutex::new(keyboard_controller::KeyboardController::new()));
 
-    let sub_controller = Box::new(KeyboardController::create_sub_controller(
+    let sub_controller = maze::Controller::Keyboard(KeyboardController::create_sub_controller(
         &keyboard_controller,
         [
             LogicKey(VirtualKeyCode::E),
@@ -130,14 +130,11 @@ fn main() {
         ],
     ));
 
-    let my_maze = Arc::new(my_maze);
+    my_maze.add_tank(sub_controller);
+    let mut my_maze = Arc::new(my_maze);
     {
-        let mut my_maze = Arc::clone(&my_maze);
+        let my_maze = Arc::clone(&my_maze);
         thread::spawn(move || {
-            let mut gilrs = Gilrs::new().unwrap();
-            let gamepad = gilrs.gamepads().next().unwrap().1;
-            let gamepad = Box::new(GamepadController::create_gamepad_controller(gamepad));
-            my_maze.add_tank(gamepad);
             my_maze.run_physic()
         });
     }
