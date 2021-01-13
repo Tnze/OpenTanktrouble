@@ -16,6 +16,7 @@ use vulkano::{
     },
     sync::{self, FlushError, GpuFuture},
 };
+use vulkano::command_buffer::SubpassContents;
 use vulkano_win::VkSurfaceBuild;
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -206,7 +207,11 @@ fn main() {
                     .unwrap();
 
                 builder
-                    .begin_render_pass(framebuffers[image_num].clone(), false, clear_values)
+                    .begin_render_pass(
+                        framebuffers[image_num].clone(),
+                        SubpassContents::Inline,
+                        clear_values,
+                    )
                     .unwrap();
                 my_maze.draw(&mut builder).unwrap();
                 builder.end_render_pass().unwrap();

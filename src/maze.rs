@@ -240,8 +240,7 @@ impl GameScene {
                 let right_body = &mut physical.rigid_body_set[tank.physical_handle];
                 let agl = right_body.position().rotation;
                 right_body.apply_force(Rotation2::from(agl) * Vector2::new(0.0, acl * -10.0), true);
-                right_body.apply_torque(rot * -15.0, true);
-                // right_body.set_position(Isometry2::new(, rot), true);
+                right_body.apply_torque(rot * 15.0, true);
             }
             pipeline.step(
                 &gravity,

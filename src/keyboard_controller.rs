@@ -61,7 +61,7 @@ impl SubKeyboardController {
             _ => 0.0,
         };
         (
-            get_value(2, 1.0) - get_value(3, 1.0),
+            get_value(3, 1.0) - get_value(2, 1.0),
             get_value(0, 1.0) - get_value(1, 0.6),
         )
     }

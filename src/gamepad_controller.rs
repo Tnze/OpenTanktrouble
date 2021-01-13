@@ -15,10 +15,10 @@ impl GamepadController {
         let gamepad = gilrs.gamepad(self.gamepad);
         (
             gamepad
-                .axis_data(gilrs::Axis::LeftStickY)
+                .axis_data(gilrs::Axis::RightStickX)
                 .map_or(0.0, |x| x.value()),
             gamepad
-                .axis_data(gilrs::Axis::LeftStickX)
+                .axis_data(gilrs::Axis::RightStickY)
                 .map_or(0.0, |x| x.value()),
         )
     }

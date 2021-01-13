@@ -10,10 +10,10 @@ repository = "https://github.com/Tnze/OpenTanktrouble"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-vulkano = "0.19"
-vulkano-win = "0.19"
-vulkano-shaders = "0.19.0"
-winit = "0.22"
+vulkano = "0.20"
+vulkano-win = "0.20"
+vulkano-shaders = "0.20"
+winit = "0.24"
 gilrs = "0.8.0"
 rapier2d = { version = "0.4.2", features = ["enhanced-determinism"] }
 
