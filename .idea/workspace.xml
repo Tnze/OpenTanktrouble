@@ -16,8 +16,8 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/gamepad_controller.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main_menu.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/maze.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -84,6 +84,11 @@
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
     <property name="settings.editor.selected.configurable" value="CPPToolchains" />
   </component>
+  <component name="RunAnythingCache">
+    <option name="myCommands">
+      <command value="cargo fmt" />
+    </option>
+  </component>
   <component name="RunManager" selected="Cargo.Run">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
@@ -113,10 +118,31 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="fmt" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="fmt" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Run" />
       <item itemvalue="Cargo.Check" />
+      <item itemvalue="Cargo.fmt" />
     </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Cargo.fmt" />
+        <item itemvalue="Cargo.fmt" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="RustProjectSettings">
     <option name="toolchainHomeDirectory" value="$USER_HOME$/.cargo/bin" />

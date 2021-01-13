@@ -5,14 +5,12 @@ use std::{
 
 use gilrs::Gilrs;
 use rapier2d::{
-    dynamics::{
-        BodyStatus, IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle,
-        RigidBodySet,
-    },
+    dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
-    na::{Isometry2, U102, U2, Vector2},
+    na::{Isometry2, Matrix4, Vector2},
     pipeline::PhysicsPipeline,
 };
+use rapier2d::na::Rotation2;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{
@@ -62,12 +60,20 @@ mod vs {
         src: "
 				#version 450 core
 				layout(set = 0, binding = 0) uniform Data {
-                    vec2 trans;
+                    mat4 trans;
+                    vec2 pos;
                 } uniforms;
 				layout(location = 0) in vec2 position;
 
 				void main() {
-					gl_Position = vec4(position + uniforms.trans, 0.0, 1.0);
+				    mat4 t = uniforms.trans;
+				    vec3 v = mat3(
+				        t[0][0], t[0][1], t[0][2],
+				        t[1][0], t[1][1], t[1][2],
+				        t[2][0], t[2][1], t[2][2]
+				    ) * vec3(position, 1.0);
+				    vec2 p = vec2(v[0]/v[2], v[1]/v[2]) + uniforms.pos;
+					gl_Position = vec4(p, 0.0, 1.0);
 				}
 			"
     }
@@ -80,7 +86,7 @@ mod fs {
 				#version 450 core
 				layout(location = 0) out vec4 f_color;
 				void main() {
-					f_color = vec4(1.0, 0.0, 0.0, 1.0);
+					f_color = vec4(0.0, 0.0, 0.0, 1.0);
 				}
 			"
     }
@@ -190,8 +196,12 @@ impl GameScene {
 
     /// 添加一个控制器
     pub fn add_tank(&self, controller: Controller) {
-        let right_body = RigidBodyBuilder::new(BodyStatus::Dynamic)
+        let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
+            .mass(1.0, true)
+            .linear_damping(10.0)
+            .principal_angular_inertia(1.0, true)
+            .angular_damping(10.0)
             .build();
         let physical_handle = self
             .physical
@@ -208,20 +218,6 @@ impl GameScene {
     pub fn run_physic(&self) {
         let mut gilrs = Gilrs::new().unwrap();
 
-        // Iterate over all connected gamepads
-        for (_id, gamepad) in gilrs.gamepads() {
-            println!("{} is {:?}", gamepad.name(), gamepad.power_info());
-        }
-        let mut active_gamepad = None;
-        while let None = active_gamepad {
-            // Examine new events
-            while let Some(gilrs::Event { id, event, time }) = gilrs.next_event() {
-                //println!("{:?} New event from {}: {:?}", time, id, event);
-                active_gamepad = Some(id);
-            }
-        }
-        self.add_tank(Gamepad(GamepadController::create_gamepad_controller(active_gamepad.unwrap())));
-
         let start_time = time::Instant::now();
         let mut pipeline = PhysicsPipeline::new();
         let dt = time::Duration::from_secs_f32(
@@ -231,8 +227,10 @@ impl GameScene {
         loop {
             let mut physical_mg = self.physical.lock().unwrap();
             let physical = &mut *physical_mg;
-            while let Some(gilrs::Event { id, event, time }) = gilrs.next_event() {
-                self.tanks.lock().unwrap()[1].controller = Gamepad(GamepadController::create_gamepad_controller(id));
+            // update controller when gamepad eventevent
+            while let Some(gilrs::Event { id, .. }) = gilrs.next_event() {
+                self.tanks.lock().unwrap()[0].controller =
+                    Gamepad(GamepadController::create_gamepad_controller(id));
             }
             for tank in self.tanks.lock().unwrap().iter() {
                 let (rot, acl) = match &tank.controller {
@@ -240,8 +238,10 @@ impl GameScene {
                     Keyboard(c) => c.movement_status(),
                 };
                 let right_body = &mut physical.rigid_body_set[tank.physical_handle];
-
-                right_body.set_position(Isometry2::new(Vector2::new(rot, acl), rot), true);
+                let agl = right_body.position().rotation;
+                right_body.apply_force(Rotation2::from(agl) * Vector2::new(0.0, acl * -10.0), true);
+                right_body.apply_torque(rot * -15.0, true);
+                // right_body.set_position(Isometry2::new(, rot), true);
             }
             pipeline.step(
                 &gravity,
@@ -272,12 +272,25 @@ impl GameScene {
         let physical = &mut *self.physical.lock().unwrap();
         for tank in self.tanks.lock().unwrap().iter() {
             let uniform_buffer_subbuffer = {
-                let tank_body = physical.rigid_body_set.get(tank.physical_handle).unwrap();
-                let pos = tank_body.position().translation;
+                let tank_body = physical
+                    .rigid_body_set
+                    .get(tank.physical_handle)
+                    .expect("Used an invalid rigid body handler");
+                let pos = tank_body.position();
+                // dbg!(trans);
+                let trans = pos.rotation.to_homogeneous();
                 let uniform_data = vs::ty::Data {
-                    trans: Vector2::new(pos.x, pos.y).into(),
+                    trans: Matrix4::new(
+                        trans.m11, trans.m12, trans.m13, 0f32, trans.m21, trans.m22, trans.m23,
+                        0f32, trans.m31, trans.m32, trans.m33, 0f32, 0f32, 0f32, 0f32, 1f32,
+                    )
+                        .into(),
+                    pos: Vector2::new(pos.translation.vector[0], pos.translation.vector[1]).into(),
                 };
-                render.uniform_buffer.next(uniform_data).unwrap()
+                render
+                    .uniform_buffer
+                    .next(uniform_data)
+                    .expect("GPU memory is not enough")
             };
             let layout = render.pipeline.descriptor_set_layout(0).unwrap();
             let set = Arc::new(

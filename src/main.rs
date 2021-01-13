@@ -20,18 +20,13 @@ use vulkano_win::VkSurfaceBuild;
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, Window, WindowBuilder},
+    window::{Window, WindowBuilder},
 };
 
-use crate::gamepad_controller::GamepadController;
-use crate::keyboard_controller::{
-    Key::{LogicKey, PhysicKey},
-    KeyboardController,
-};
-use crate::maze::Controller::Gamepad;
+use crate::keyboard_controller::{Key::LogicKey, KeyboardController};
 
-mod keyboard_controller;
 mod gamepad_controller;
+mod keyboard_controller;
 
 mod main_menu;
 mod maze;
@@ -102,7 +97,7 @@ fn main() {
     };
     // We now create a buffer that will store the shape of our triangle.
 
-    let mut my_maze = maze::GameScene::create(device.clone(), swapchain.format());
+    let my_maze = maze::GameScene::create(device.clone(), swapchain.format());
 
     let mut framebuffers = {
         let render = &mut *my_maze.render.lock().unwrap();
@@ -131,12 +126,10 @@ fn main() {
     ));
 
     my_maze.add_tank(sub_controller);
-    let mut my_maze = Arc::new(my_maze);
+    let my_maze = Arc::new(my_maze);
     {
         let my_maze = Arc::clone(&my_maze);
-        thread::spawn(move || {
-            my_maze.run_physic()
-        });
+        thread::spawn(move || my_maze.run_physic());
     }
 
     event_loop.run(move |event, _, control_flow| {
@@ -204,7 +197,7 @@ fn main() {
                     recreate_swapchain = true;
                 }
 
-                let clear_values = vec![[0.0, 0.0, 1.0, 1.0].into()];
+                let clear_values = vec![[1.0, 1.0, 1.0, 1.0].into()];
 
                 let mut builder = AutoCommandBufferBuilder::primary_one_time_submit(
                     device.clone(),
