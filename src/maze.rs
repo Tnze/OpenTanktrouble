@@ -61,19 +61,12 @@ mod vs {
 				#version 450 core
 				layout(set = 0, binding = 0) uniform Data {
                     mat4 trans;
-                    vec2 pos;
                 } uniforms;
 				layout(location = 0) in vec2 position;
 
 				void main() {
-				    mat4 t = uniforms.trans;
-				    vec3 v = mat3(
-				        t[0][0], t[0][1], t[0][2],
-				        t[1][0], t[1][1], t[1][2],
-				        t[2][0], t[2][1], t[2][2]
-				    ) * vec3(position, 1.0);
-				    vec2 p = vec2(v[0]/v[2], v[1]/v[2]) + uniforms.pos;
-					gl_Position = vec4(p, 0.0, 1.0);
+				    vec4 v = uniforms.trans * vec4(position, 1.0, 0.0);
+					gl_Position = vec4(v[0], v[1], 0.0, v[2]);
 				}
 			"
     }
@@ -276,15 +269,9 @@ impl GameScene {
                     .get(tank.physical_handle)
                     .expect("Used an invalid rigid body handler");
                 let pos = tank_body.position();
-                // dbg!(trans);
-                let trans = pos.rotation.to_homogeneous();
+                let trans: Matrix4<_> = pos.to_homogeneous().fixed_resize(0.0);
                 let uniform_data = vs::ty::Data {
-                    trans: Matrix4::new(
-                        trans.m11, trans.m12, trans.m13, 0f32, trans.m21, trans.m22, trans.m23,
-                        0f32, trans.m31, trans.m32, trans.m33, 0f32, 0f32, 0f32, 0f32, 1f32,
-                    )
-                        .into(),
-                    pos: Vector2::new(pos.translation.vector[0], pos.translation.vector[1]).into(),
+                    trans: trans.into(),
                 };
                 render
                     .uniform_buffer

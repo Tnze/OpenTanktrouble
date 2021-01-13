@@ -15,10 +15,6 @@
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/gamepad_controller.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/keyboard_controller.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/maze.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -244,7 +240,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610370519189</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="Update libraries version">
+      <created>1610526045522</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1610526045522</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -262,7 +265,8 @@
     <MESSAGE value="It's ready to compile" />
     <MESSAGE value="Fix some warnings" />
     <MESSAGE value="Adj code fmt" />
-    <option name="LAST_COMMIT_MESSAGE" value="Adj code fmt" />
+    <MESSAGE value="Update libraries version" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update libraries version" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
