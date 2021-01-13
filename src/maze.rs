@@ -7,10 +7,9 @@ use gilrs::Gilrs;
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
-    na::{Isometry2, Matrix4, Vector2},
+    na::{Isometry2, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use rapier2d::na::Rotation2;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{

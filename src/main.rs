@@ -4,7 +4,7 @@ use std::{
 };
 
 use vulkano::{
-    command_buffer::{AutoCommandBufferBuilder, DynamicState},
+    command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents},
     device::{Device, DeviceExtensions},
     framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract},
     image::{ImageUsage, SwapchainImage},
@@ -16,7 +16,6 @@ use vulkano::{
     },
     sync::{self, FlushError, GpuFuture},
 };
-use vulkano::command_buffer::SubpassContents;
 use vulkano_win::VkSurfaceBuild;
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
