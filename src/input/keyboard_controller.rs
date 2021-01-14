@@ -9,13 +9,13 @@ pub enum Key {
     PhysicKey(ScanCode),
 }
 
-pub struct KeyboardController {
+pub struct Keyboard {
     key_map: HashMap<Key, ElementState>,
 }
 
-impl KeyboardController {
-    pub fn new() -> KeyboardController {
-        KeyboardController {
+impl Keyboard {
+    pub fn new() -> Keyboard {
+        Keyboard {
             key_map: HashMap::new(),
         }
     }
@@ -36,24 +36,24 @@ impl KeyboardController {
     }
 }
 
-impl KeyboardController {
+impl Keyboard {
     pub fn create_sub_controller(
-        parent: &Arc<Mutex<KeyboardController>>,
+        parent: &Arc<Mutex<Keyboard>>,
         movement_keys: [Key; 4],
-    ) -> SubKeyboardController {
-        SubKeyboardController {
+    ) -> Controller {
+        Controller {
             movement_keys,
             parent: Arc::clone(parent),
         }
     }
 }
 
-pub struct SubKeyboardController {
+pub struct Controller {
     movement_keys: [Key; 4],
-    parent: Arc<Mutex<KeyboardController>>,
+    parent: Arc<Mutex<Keyboard>>,
 }
 
-impl SubKeyboardController {
+impl Controller {
     pub(crate) fn movement_status(&self) -> (f32, f32) {
         let parent = &self.parent.lock().unwrap().key_map;
         let get_value = |key, pressed| match parent.get(&self.movement_keys[key]) {

@@ -7,7 +7,7 @@ use gilrs::Gilrs;
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
-    na::{Isometry2, Matrix4, Rotation2, Vector2},
+    na::{Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
 use vulkano::{
@@ -23,18 +23,23 @@ use vulkano::{
     pipeline::{GraphicsPipeline, GraphicsPipelineAbstract},
 };
 
-use crate::gamepad_controller::GamepadController;
-use crate::keyboard_controller::SubKeyboardController;
-use crate::maze::Controller::{Gamepad, Keyboard};
+use crate::input::{
+    Controller::{self, Gamepad, Keyboard},
+    gamepad_controller::Controller as GamepadController,
+};
 
 pub struct GameScene {
     tanks: Mutex<Vec<Tank>>,
     physical: Mutex<PhysicalStatus>,
-    pub(crate) render: Mutex<RenderObjects>,
+    render: Mutex<RenderObjects>,
+}
+
+struct Tank {
+    controller: Controller,
+    physical_handle: RigidBodyHandle,
 }
 
 struct PhysicalStatus {
-    /// 物理模拟顺序号
     seq_number: u32,
 
     integration_parameters: IntegrationParameters,
@@ -46,42 +51,19 @@ struct PhysicalStatus {
 }
 
 pub struct RenderObjects {
-    pub(crate) dynamic_state: DynamicState,
-    pub(crate) pipeline: Arc<dyn GraphicsPipelineAbstract + Send + Sync>,
-    pub(crate) render_pass: Arc<dyn RenderPassAbstract + Send + Sync>,
+    pub dynamic_state: DynamicState,
+    pub pipeline: Arc<dyn GraphicsPipelineAbstract + Send + Sync>,
+    pub render_pass: Arc<dyn RenderPassAbstract + Send + Sync>,
     uniform_buffer: CpuBufferPool<vs::ty::Data>,
     vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
 }
 
 mod vs {
-    vulkano_shaders::shader! {
-        ty: "vertex",
-        src: "
-				#version 450 core
-				layout(set = 0, binding = 0) uniform Data {
-                    mat4 trans;
-                } uniforms;
-				layout(location = 0) in vec2 position;
-
-				void main() {
-				    vec4 v = uniforms.trans * vec4(position, 1.0, 0.0);
-					gl_Position = vec4(v[0], v[1], 0.0, v[2]);
-				}
-			"
-    }
+    vulkano_shaders::shader! { ty: "vertex", path: "src/scene/shaders/tank.vert" }
 }
 
 mod fs {
-    vulkano_shaders::shader! {
-        ty: "fragment",
-        src: "
-				#version 450 core
-				layout(location = 0) out vec4 f_color;
-				void main() {
-					f_color = vec4(0.0, 0.0, 0.0, 1.0);
-				}
-			"
-    }
+    vulkano_shaders::shader! { ty: "fragment", path: "src/scene/shaders/tank.frag" }
 }
 
 #[derive(Default, Copy, Clone)]
@@ -103,7 +85,6 @@ impl GameScene {
                         load: Clear,
                         store: Store,
                         format: format,
-                        // TODO:
                         samples: 1,
                     }
                 },
@@ -186,7 +167,7 @@ impl GameScene {
         }
     }
 
-    /// 添加一个控制器
+    /// Add a tank to this game scene. Controlled by the controller.
     pub fn add_tank(&self, controller: Controller) {
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
@@ -207,7 +188,7 @@ impl GameScene {
         });
     }
 
-    pub fn run_physic(&self) {
+    pub fn run_physic(&self) -> ! {
         let mut gilrs = Gilrs::new().unwrap();
 
         let start_time = time::Instant::now();
@@ -217,39 +198,48 @@ impl GameScene {
         );
         let gravity = Vector2::new(0.0, 0.0);
         loop {
-            let mut physical_mg = self.physical.lock().unwrap();
-            let physical = &mut *physical_mg;
-            // update controller when gamepad eventevent
-            while let Some(gilrs::Event { id, .. }) = gilrs.next_event() {
-                self.tanks.lock().unwrap()[0].controller =
-                    Gamepad(GamepadController::create_gamepad_controller(id));
-            }
-            for tank in self.tanks.lock().unwrap().iter() {
-                let (rot, acl) = match &tank.controller {
-                    Gamepad(c) => c.movement_status(&gilrs),
-                    Keyboard(c) => c.movement_status(),
-                };
-                let right_body = &mut physical.rigid_body_set[tank.physical_handle];
-                let agl = right_body.position().rotation;
-                right_body.apply_force(Rotation2::from(agl) * Vector2::new(0.0, acl * -10.0), true);
-                right_body.apply_torque(rot * 15.0, true);
-            }
-            pipeline.step(
-                &gravity,
-                &physical.integration_parameters,
-                &mut physical.broad_phase,
-                &mut physical.narrow_phase,
-                &mut physical.rigid_body_set,
-                &mut physical.collider_set,
-                &mut physical.joint_set,
-                None,
-                None,
-                &(),
-            );
-            physical.seq_number += 1; // 模拟顺序号+1
-
-            if let Some(d) = (dt * physical.seq_number).checked_sub(start_time.elapsed()) {
-                drop(physical_mg);
+            let sleep_time = {
+                let physical = &mut *self.physical.lock().unwrap();
+                {
+                    let tanks = &mut *self.tanks.lock().unwrap();
+                    // Update controller when gamepad event.
+                    while let Some(gilrs::Event { id, .. }) = gilrs.next_event() {
+                        tanks[0].controller =
+                            Gamepad(GamepadController::create_gamepad_controller(id));
+                    }
+                    // Apply the control to the tank.
+                    for tank in tanks.iter() {
+                        let (rot, acl) = match &tank.controller {
+                            Gamepad(c) => c.movement_status(&gilrs),
+                            Keyboard(c) => c.movement_status(),
+                        };
+                        let right_body = &mut physical.rigid_body_set[tank.physical_handle];
+                        let agl = right_body.position().rotation;
+                        right_body.apply_force(
+                            Rotation2::from(agl) * Vector2::new(0.0, acl * -10.0),
+                            true,
+                        );
+                        right_body.apply_torque(rot * 15.0, true);
+                    }
+                }
+                pipeline.step(
+                    &gravity,
+                    &physical.integration_parameters,
+                    &mut physical.broad_phase,
+                    &mut physical.narrow_phase,
+                    &mut physical.rigid_body_set,
+                    &mut physical.collider_set,
+                    &mut physical.joint_set,
+                    None,
+                    None,
+                    &(),
+                );
+                // Increase simulate sequence number.
+                physical.seq_number += 1;
+                // Calculate sleep time.
+                (dt * physical.seq_number).checked_sub(start_time.elapsed())
+            };
+            if let Some(d) = sleep_time {
                 thread::sleep(d);
             }
         }
@@ -295,18 +285,8 @@ impl GameScene {
         }
         Ok(builder)
     }
-}
 
-/// 控制器代表用于操控一辆坦克的对象，可以是一个手柄或者一个键盘，甚至一个A.I.。
-/// 一般拥有一个movement_status方法用于查询当前该控制器的输入状态
-/// 包括一个指定旋转操作的浮点数，以及一个指定前进、后退操作的浮点数
-/// 两者的取值范围都在[-1.0 .. 1.0]之间
-pub enum Controller {
-    Gamepad(GamepadController),
-    Keyboard(SubKeyboardController),
-}
-
-struct Tank {
-    controller: Controller,
-    physical_handle: RigidBodyHandle,
+    pub fn set_render<R>(&self, f: impl FnOnce(&mut RenderObjects) -> R) -> R {
+        f(&mut *self.render.lock().unwrap())
+    }
 }

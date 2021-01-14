@@ -23,13 +23,11 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::keyboard_controller::{Key::LogicKey, KeyboardController};
+use crate::input::keyboard_controller::{Key::LogicKey, Keyboard};
+use crate::scene::playground::GameScene;
 
-mod gamepad_controller;
-mod keyboard_controller;
-
-mod main_menu;
-mod maze;
+mod input;
+mod scene;
 
 fn main() {
     let required_extensions = vulkano_win::required_extensions();
@@ -95,27 +93,25 @@ fn main() {
         )
             .unwrap()
     };
-    // We now create a buffer that will store the shape of our triangle.
 
-    let my_maze = maze::GameScene::create(device.clone(), swapchain.format());
+    let my_maze = GameScene::create(device.clone(), swapchain.format());
 
-    let mut framebuffers = {
-        let render = &mut *my_maze.render.lock().unwrap();
+    let mut framebuffers = my_maze.set_render(|render| {
         window_size_dependent_setup(
             &images,
             render.render_pass.clone(),
             &mut render.dynamic_state,
         )
-    };
+    });
 
     let mut recreate_swapchain = false;
 
     let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
-    // 初始化键盘控制器
-    let keyboard_controller = Arc::new(Mutex::new(keyboard_controller::KeyboardController::new()));
+    // Init keyboard controller
+    let keyboard_controller = Arc::new(Mutex::new(Keyboard::new()));
 
-    let sub_controller = maze::Controller::Keyboard(KeyboardController::create_sub_controller(
+    let sub_controller = input::Controller::Keyboard(Keyboard::create_sub_controller(
         &keyboard_controller,
         [
             LogicKey(VirtualKeyCode::E),
@@ -140,10 +136,8 @@ fn main() {
             } => {
                 *control_flow = ControlFlow::Exit;
             }
-            Event::WindowEvent {
-                event: WindowEvent::Resized(_),
-                ..
-            } => {
+            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+                // Marks the current state as swapchain needing to be recreate
                 recreate_swapchain = true;
             }
             Event::WindowEvent {
@@ -162,7 +156,7 @@ fn main() {
             }
             Event::RedrawEventsCleared => {
                 previous_frame_end.as_mut().unwrap().cleanup_finished();
-
+                // Recreate the swapchain when the game window resized
                 if recreate_swapchain {
                     let dimensions: [u32; 2] = surface.window().inner_size().into();
                     let (new_swapchain, new_images) =
@@ -172,14 +166,13 @@ fn main() {
                             Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
                         };
                     swapchain = new_swapchain;
-                    framebuffers = {
-                        let render = &mut *my_maze.render.lock().unwrap();
+                    framebuffers = my_maze.set_render(|render| {
                         window_size_dependent_setup(
                             &new_images,
                             render.render_pass.clone(),
                             &mut render.dynamic_state,
                         )
-                    };
+                    });
                     recreate_swapchain = false;
                 }
 
