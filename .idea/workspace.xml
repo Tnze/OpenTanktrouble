@@ -13,20 +13,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Better way to resize mat3 to mat4">
-      <change afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/input/mod.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scene/shaders/tank.frag" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scene/shaders/tank.vert" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/scene/user_interface.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/gamepad_controller.rs" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/keyboard_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/user_interface.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/user_interface.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,12 +96,7 @@
       <command value="cargo fmt" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.Debug">
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
+  <component name="RunManager" selected="Cargo.Check">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />

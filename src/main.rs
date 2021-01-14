@@ -20,8 +20,9 @@ use vulkano_win::VkSurfaceBuild;
 use winit::{
     event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Window, WindowBuilder},
+    window::{Fullscreen, Window, WindowBuilder},
 };
+use winit::event::ElementState;
 
 use crate::input::keyboard_controller::{Key::LogicKey, Keyboard};
 use crate::scene::playground::GameScene;
@@ -136,7 +137,10 @@ fn main() {
             } => {
                 *control_flow = ControlFlow::Exit;
             }
-            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+            Event::WindowEvent {
+                event: WindowEvent::Resized(_),
+                ..
+            } => {
                 // Marks the current state as swapchain needing to be recreate
                 recreate_swapchain = true;
             }
@@ -145,13 +149,26 @@ fn main() {
                 ..
             } => {
                 keyboard_controller.lock().unwrap().input_event(&input);
-                // 按下Esc后退出
                 if let KeyboardInput {
-                    virtual_keycode: Some(VirtualKeyCode::Escape),
+                    virtual_keycode: Some(key),
+                    state,
                     ..
                 } = input
                 {
-                    *control_flow = ControlFlow::Exit;
+                    match key {
+                        VirtualKeyCode::Escape => {
+                            // 按下Esc后退出
+                            *control_flow = ControlFlow::Exit;
+                        }
+                        VirtualKeyCode::F11 if state == ElementState::Pressed => {
+                            let window = surface.window();
+                            window.set_fullscreen(match window.fullscreen() {
+                                None => Some(Fullscreen::Borderless(None)),
+                                Some(_) => None,
+                            });
+                        }
+                        _ => {}
+                    }
                 }
             }
             Event::RedrawEventsCleared => {

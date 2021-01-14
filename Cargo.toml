@@ -10,7 +10,7 @@ repository = "https://github.com/Tnze/OpenTanktrouble"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-futures = "0.3"
+#futures = "0.3"
 
 vulkano = "0.20"
 vulkano-win = "0.20"
