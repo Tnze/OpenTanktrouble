@@ -3,7 +3,6 @@ use std::{
     thread, time,
 };
 
-use gilrs::Gilrs;
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
@@ -189,8 +188,6 @@ impl GameScene {
     }
 
     pub fn run_physic(&self) -> ! {
-        let mut gilrs = Gilrs::new().unwrap();
-
         let start_time = time::Instant::now();
         let mut pipeline = PhysicsPipeline::new();
         let dt = time::Duration::from_secs_f32(
@@ -202,15 +199,10 @@ impl GameScene {
                 let physical = &mut *self.physical.lock().unwrap();
                 {
                     let tanks = &mut *self.tanks.lock().unwrap();
-                    // Update controller when gamepad event.
-                    while let Some(gilrs::Event { id, .. }) = gilrs.next_event() {
-                        tanks[0].controller =
-                            Gamepad(GamepadController::create_gamepad_controller(id));
-                    }
                     // Apply the control to the tank.
                     for tank in tanks.iter() {
                         let (rot, acl) = match &tank.controller {
-                            Gamepad(c) => c.movement_status(&gilrs),
+                            Gamepad(c) => c.movement_status(),
                             Keyboard(c) => c.movement_status(),
                         };
                         let right_body = &mut physical.rigid_body_set[tank.physical_handle];

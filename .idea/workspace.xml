@@ -12,14 +12,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Better way to resize mat3 to mat4">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/input/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/user_interface.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/user_interface.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -96,7 +93,7 @@
       <command value="cargo fmt" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.Check">
+  <component name="RunManager" selected="Cargo.Debug">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -153,6 +150,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Debug" />
       <item itemvalue="Cargo.Release" />
@@ -204,6 +206,7 @@
       <workItem from="1610428305105" duration="7355000" />
       <workItem from="1610584325329" duration="7327000" />
       <workItem from="1610595940203" duration="13663000" />
+      <workItem from="1610679951465" duration="7292000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -282,7 +285,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610532395712</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Press F11 to switch between fullscreen-mode and window-mode">
+      <created>1610651589629</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1610651589629</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -302,9 +312,21 @@
     <MESSAGE value="Adj code fmt" />
     <MESSAGE value="Update libraries version" />
     <MESSAGE value="Better way to resize mat3 to mat4" />
-    <option name="LAST_COMMIT_MESSAGE" value="Better way to resize mat3 to mat4" />
+    <MESSAGE value="Press F11 to switch between fullscreen-mode and window-mode" />
+    <option name="LAST_COMMIT_MESSAGE" value="Press F11 to switch between fullscreen-mode and window-mode" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="com.jetbrains.cidr.execution.debugger.OCBreakpointType">
+          <url>file://$PROJECT_DIR$/src/scene/playground.rs</url>
+          <line>198</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

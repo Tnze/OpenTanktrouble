@@ -3,6 +3,7 @@ use std::{
     thread,
 };
 
+use gilrs::{EventType, Gilrs};
 use vulkano::{
     command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents},
     device::{Device, DeviceExtensions},
@@ -24,6 +25,7 @@ use winit::{
 };
 use winit::event::ElementState;
 
+use crate::input::gamepad_controller::{Controller, Gamepad};
 use crate::input::keyboard_controller::{Key::LogicKey, Keyboard};
 use crate::scene::playground::GameScene;
 
@@ -111,6 +113,8 @@ fn main() {
 
     // Init keyboard controller
     let keyboard_controller = Arc::new(Mutex::new(Keyboard::new()));
+    // Init gamepad controller
+    let mut gamepad_controller = Gamepad::new();
 
     let sub_controller = input::Controller::Keyboard(Keyboard::create_sub_controller(
         &keyboard_controller,
@@ -130,6 +134,17 @@ fn main() {
     }
 
     event_loop.run(move |event, _, control_flow| {
+        while let Some(e) = gamepad_controller.next() {
+            if let gilrs::Event {
+                id,
+                event: EventType::Connected,
+                ..
+            } = e
+            {
+                println!("change tank: {}", id);
+                my_maze.add_tank(input::Controller::Gamepad(Controller::create_gamepad_controller(&mut gamepad_controller, id)));
+            }
+        }
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
