@@ -3,7 +3,9 @@ use vulkano::command_buffer::{
     AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
 };
 
-use super::user_interface::Element as UIElement;
+use crate::scene::user_interface::ClickHandler;
+
+use super::user_interface::{Button, Element as UIElement};
 
 pub struct MainMenuScene {
     buttons: (Button<SettingButton>, Button<SettingButton>),
@@ -40,32 +42,6 @@ impl UIElement for MainMenuScene {
     }
 }
 
-trait ClickHandler {
-    fn click(&self);
-}
-
-struct Button<C: ClickHandler> {
-    pos: Vector2<f32>,
-    size: (f32, f32),
-    // (width, height)
-    click_handler: C,
-}
-
-impl<C: ClickHandler> Button<C> {
-    fn click(&self, pos: Vector2<f32>) -> bool {
-        if self.is_hit(pos) {
-            self.click_handler.click();
-            return true;
-        }
-        false
-    }
-    fn is_hit(&self, pos: Vector2<f32>) -> bool {
-        pos.x < self.pos.x + self.size.0 / 2.0
-            && pos.x > self.pos.x + self.size.0 / 2.0
-            && pos.y < self.pos.y + self.size.1 / 2.0
-            && pos.y > self.pos.y + self.size.1 / 2.0
-    }
-}
 
 struct SettingButton {}
 

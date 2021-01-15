@@ -142,7 +142,9 @@ fn main() {
             } = e
             {
                 println!("change tank: {}", id);
-                my_maze.add_tank(input::Controller::Gamepad(Controller::create_gamepad_controller(&mut gamepad_controller, id)));
+                my_maze.add_tank(input::Controller::Gamepad(
+                    Controller::create_gamepad_controller(&mut gamepad_controller, id),
+                ));
             }
         }
         match event {
@@ -230,6 +232,10 @@ fn main() {
                 )
                     .unwrap();
 
+                let frame_size = {
+                    let dim = framebuffers[image_num].dimensions();
+                    [dim[0] as f32, dim[1] as f32]
+                };
                 builder
                     .begin_render_pass(
                         framebuffers[image_num].clone(),
@@ -237,7 +243,9 @@ fn main() {
                         clear_values,
                     )
                     .unwrap();
-                my_maze.draw(&mut builder).unwrap();
+                my_maze
+                    .draw(&mut builder, frame_size)
+                    .unwrap();
                 builder.end_render_pass().unwrap();
 
                 // Finish building the command buffer by calling `build`.

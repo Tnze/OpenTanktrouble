@@ -9,6 +9,7 @@ use rapier2d::{
     na::{Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
+use rapier2d::na::Matrix3;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{
@@ -103,7 +104,6 @@ impl GameScene {
                 .unwrap(),
         );
 
-        let (top, left, width, height) = (-0.3, -0.3, 0.6, 0.6);
         let uniform_buffer = CpuBufferPool::<vs::ty::Data>::new(device.clone(), BufferUsage::all());
         let dynamic_state = DynamicState {
             line_width: None,
@@ -121,22 +121,22 @@ impl GameScene {
                 false,
                 [
                     Vertex {
-                        position: (left, top),
+                        position: (-0.5, -0.5),
                     },
                     Vertex {
-                        position: (left + width, top),
+                        position: (0.5, -0.5),
                     },
                     Vertex {
-                        position: (left + width, top + height),
+                        position: (0.5, 0.5),
                     },
                     Vertex {
-                        position: (left, top),
+                        position: (-0.5, -0.5),
                     },
                     Vertex {
-                        position: (left + width, top + height),
+                        position: (0.5, 0.5),
                     },
                     Vertex {
-                        position: (left, top + height),
+                        position: (-0.5, 0.5),
                     },
                 ]
                     .iter()
@@ -240,6 +240,7 @@ impl GameScene {
     pub fn draw<'a>(
         &self,
         builder: &'a mut AutoCommandBufferBuilder,
+        dimensions: [f32; 2],
     ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
         let render = &mut *self.render.lock().unwrap();
         let physical = &mut *self.physical.lock().unwrap();
@@ -249,8 +250,9 @@ impl GameScene {
                     .rigid_body_set
                     .get(tank.physical_handle)
                     .expect("Used an invalid rigid body handler");
-                let pos = tank_body.position();
-                let trans: Matrix4<_> = pos.to_homogeneous().fixed_resize(0.0);
+                let loc = tank_body.position().to_homogeneous();
+                let proj = Self::projection(&dimensions);
+                let trans: Matrix4<_> = (proj * loc).fixed_resize(0.0);
                 let uniform_data = vs::ty::Data {
                     trans: trans.into(),
                 };
@@ -278,6 +280,20 @@ impl GameScene {
         Ok(builder)
     }
 
+    #[inline]
+    fn projection(frame_size: &[f32; 2]) -> Matrix3<f32> {
+        Matrix3::new(
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            frame_size[0] / frame_size[1],
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        )
+    }
     pub fn set_render<R>(&self, f: impl FnOnce(&mut RenderObjects) -> R) -> R {
         f(&mut *self.render.lock().unwrap())
     }
