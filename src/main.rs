@@ -104,8 +104,8 @@ fn main() {
     // Init gamepad controller
     let mut gamepad_controller = Gamepad::new();
 
-    let scene = {
-        let my_maze = Arc::new(GameScene::create(device.clone(), swapchain.format()));
+    let my_maze = Arc::new(GameScene::new(device.clone(), swapchain.format()));
+    let mut scene = {
         my_maze.add_tank(input::Controller::Keyboard(
             Keyboard::create_sub_controller(
                 &keyboard_controller,
@@ -132,7 +132,7 @@ fn main() {
         let phy_maze = Arc::clone(&my_maze);
         thread::spawn(move || phy_maze.run_physic());
 
-        Box::new(my_maze) as Box<dyn UIScene>
+        Box::new(my_maze.clone()) as Box<dyn UIScene>
     };
     let mut framebuffers = window_size_dependent_setup(&images, &scene);
 
@@ -148,12 +148,10 @@ fn main() {
                 ..
             } = e
             {
-                // if let GameScene(tank_scene) = scene.borrow() {
-                //     println!("change tank: {}", id);
-                //     tank_scene.add_tank(input::Controller::Gamepad(
-                //         Controller::create_gamepad_controller(&mut gamepad_controller, id),
-                //     ));
-                // }
+                println!("change tank: {}", id);
+                my_maze.add_tank(input::Controller::Gamepad(
+                    Controller::create_gamepad_controller(&mut gamepad_controller, id),
+                ));
             }
         }
         match event {
@@ -185,6 +183,14 @@ fn main() {
                         VirtualKeyCode::Escape => {
                             // 按下Esc后退出
                             *control_flow = ControlFlow::Exit;
+                        }
+                        VirtualKeyCode::K if state == ElementState::Pressed => {
+                            scene = Box::new(MainMenuScene::new());
+                            framebuffers = window_size_dependent_setup(&images, &scene);
+                        }
+                        VirtualKeyCode::L if state == ElementState::Pressed => {
+                            scene = Box::new(my_maze.clone());
+                            framebuffers = window_size_dependent_setup(&images, &scene);
                         }
                         VirtualKeyCode::F11 if state == ElementState::Pressed => {
                             let window = surface.window();

@@ -1,18 +1,21 @@
+use std::sync::Arc;
+
 use cgmath::Vector2;
 use vulkano::command_buffer::{
     AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
 };
+use vulkano::framebuffer::RenderPassAbstract;
 
 use crate::scene::user_interface::ClickHandler;
 
-use super::user_interface::{Button, Element as UIElement};
+use super::user_interface::{Button, Element as UIElement, Scene as UIScene};
 
 pub struct MainMenuScene {
     buttons: (Button<StartButton>, Button<StartButton>),
 }
 
 impl MainMenuScene {
-    fn create() -> MainMenuScene {
+    pub fn new() -> MainMenuScene {
         MainMenuScene {
             buttons: (
                 Button {
@@ -27,6 +30,16 @@ impl MainMenuScene {
                 },
             ),
         }
+    }
+}
+
+impl UIScene for MainMenuScene {
+    fn render_pass(&self) -> Arc<dyn RenderPassAbstract + Send + Sync> {
+        unimplemented!()
+    }
+
+    fn reset_viewport(&self, dimension: [f32; 2]) {
+        unimplemented!()
     }
 }
 

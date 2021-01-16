@@ -72,7 +72,7 @@ pub struct Vertex {
 vulkano::impl_vertex!(Vertex, position);
 
 impl GameScene {
-    pub fn create(device: Arc<Device>, format: Format) -> GameScene {
+    pub fn new(device: Arc<Device>, format: Format) -> GameScene {
         let vs = vs::Shader::load(Arc::clone(&device)).unwrap();
         let fs = fs::Shader::load(Arc::clone(&device)).unwrap();
 

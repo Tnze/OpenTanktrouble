@@ -29,29 +29,34 @@ impl Gamepad {
         if let Some(ctrl) = self.controllers.get(&id) {
             *ctrl.lock().unwrap() = {
                 let gamepad = self.gilrs.gamepad(id);
-                let get_axis = |axis: &Axis| gamepad.axis_data(*axis).map_or(0.0, |x| x.value());
-                let get_button = |button, a| gamepad.is_pressed(button) as i32 as f32 * a;
-                let mix = |neg, pos| pos - neg;
-                let x = [Axis::RightStickX, Axis::LeftStickX]
+                let get_axis = |axis: Axis| gamepad.axis_data(axis).map_or(0.0, |x| x.value());
+                let get_button = |pos, neg| {
+                    (gamepad.is_pressed(pos) as i32 - gamepad.is_pressed(neg) as i32) as f32
+                };
+                let control = [
+                    [
+                        get_axis(Axis::RightStickX),
+                        get_axis(Axis::LeftStickX),
+                        get_button(Button::DPadRight, Button::DPadLeft),
+                    ], // up and down
+                    [
+                        get_axis(Axis::RightStickY),
+                        get_axis(Axis::LeftStickY),
+                        get_button(Button::DPadUp, Button::DPadDown),
+                    ], // left and right
+                ]
                     .iter()
-                    .map(get_axis)
-                    .map(|x| (x.min(0.0), x.max(0.0)))
-                    .collect::<Vec<(f32, f32)>>();
-                let y = [Axis::RightStickY, Axis::LeftStickY]
-                    .iter()
-                    .map(get_axis)
-                    .map(|x| (x.min(0.0), x.max(0.0)))
-                    .collect::<Vec<(f32, f32)>>();
-                (
-                    mix(
-                        get_button(Button::DPadLeft, 1.0).min(x[0].0).min(x[1].0),
-                        get_button(Button::DPadRight, 1.0).max(x[0].1).max(x[1].1),
-                    ),
-                    mix(
-                        get_button(Button::DPadDown, 1.0).min(y[0].0).min(y[1].0),
-                        get_button(Button::DPadUp, 1.0).max(y[0].1).max(y[1].1),
-                    ),
-                )
+                    .map(|x| {
+                        let (max_x, min_x) = x
+                            .iter()
+                            .map(|v| (v.max(0.0), v.min(0.0))) // split values into two part
+                            .fold((0f32, 0f32), |acc, x| (acc.0.max(x.0), acc.1.min(x.1))); // get the max and the min
+                        max_x + min_x
+                    })
+                    .take(2)
+                    .collect::<Vec<_>>();
+
+                (control[0], control[1].max(-0.6))
             };
         }
     }
