@@ -33,30 +33,28 @@ impl Gamepad {
                 let get_button = |pos, neg| {
                     (gamepad.is_pressed(pos) as i32 - gamepad.is_pressed(neg) as i32) as f32
                 };
-                let control = [
+                let gamepad_status = [
                     [
                         get_axis(Axis::RightStickX),
                         get_axis(Axis::LeftStickX),
                         get_button(Button::DPadRight, Button::DPadLeft),
-                    ], // up and down
+                    ], // (rot) left and right
                     [
                         get_axis(Axis::RightStickY),
                         get_axis(Axis::LeftStickY),
                         get_button(Button::DPadUp, Button::DPadDown),
-                    ], // left and right
-                ]
-                    .iter()
-                    .map(|x| {
-                        let (max_x, min_x) = x
-                            .iter()
-                            .map(|v| (v.max(0.0), v.min(0.0))) // split values into two part
-                            .fold((0f32, 0f32), |acc, x| (acc.0.max(x.0), acc.1.min(x.1))); // get the max and the min
-                        max_x + min_x
-                    })
-                    .take(2)
-                    .collect::<Vec<_>>();
-
-                (control[0], control[1].max(-0.6))
+                    ], // (acl) up and down
+                ];
+                let mut control = gamepad_status.iter().map(|x| {
+                    let (max_x, min_x) = x
+                        .iter()
+                        .map(|v| (v.max(0.0), v.min(0.0))) // split values into two part
+                        .fold((0f32, 0f32), |acc, x| (acc.0.max(x.0), acc.1.min(x.1))); // get the max and the min
+                    max_x + min_x
+                });
+                let rot = control.next().unwrap();
+                let acl = control.next().unwrap();
+                (rot, acl.max(-0.6))
             };
         }
     }

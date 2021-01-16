@@ -14,12 +14,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/input/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -206,7 +201,7 @@
       <workItem from="1610584325329" duration="7327000" />
       <workItem from="1610595940203" duration="13663000" />
       <workItem from="1610679951465" duration="7292000" />
-      <workItem from="1610787925819" duration="10309000" />
+      <workItem from="1610787925819" duration="11834000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -306,7 +301,14 @@
       <option name="project" value="LOCAL" />
       <updated>1610771300369</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Restruct gamepad_controller parser and test the scene switch">
+      <created>1610818558066</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1610818558066</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -351,7 +353,8 @@
     <MESSAGE value="Press F11 to switch between fullscreen-mode and window-mode" />
     <MESSAGE value="Fix proj scale" />
     <MESSAGE value="Building scene system" />
-    <option name="LAST_COMMIT_MESSAGE" value="Building scene system" />
+    <MESSAGE value="Restruct gamepad_controller parser and test the scene switch" />
+    <option name="LAST_COMMIT_MESSAGE" value="Restruct gamepad_controller parser and test the scene switch" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
