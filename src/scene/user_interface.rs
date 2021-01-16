@@ -13,11 +13,11 @@ pub(crate) trait Element {
     fn draw<'a>(
         &self,
         builder: &'a mut AutoCommandBufferBuilder,
-        dimensions: [f32; 2],
+        _dimensions: [f32; 2],
     ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
         Ok(builder)
     }
-    fn click(&self, pos: Vector2<f32>) -> bool {
+    fn click(&self, _pos: Vector2<f32>) -> bool {
         false
     }
     fn touch(&self, pos: Vector2<f32>) -> bool {
