@@ -3,14 +3,13 @@ use std::{
     thread,
 };
 
-use gilrs::{EventType, Gilrs};
+use gilrs::EventType;
 use vulkano::{
-    command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents},
+    command_buffer::{AutoCommandBufferBuilder, SubpassContents},
     device::{Device, DeviceExtensions},
-    framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract},
+    framebuffer::{Framebuffer, FramebufferAbstract},
     image::{ImageUsage, SwapchainImage},
     instance::{Instance, PhysicalDevice},
-    pipeline::viewport::Viewport,
     swapchain::{
         self, AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform,
         Swapchain, SwapchainCreationError,
@@ -19,15 +18,18 @@ use vulkano::{
 };
 use vulkano_win::VkSurfaceBuild;
 use winit::{
-    event::{Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, Window, WindowBuilder},
 };
-use winit::event::ElementState;
 
-use crate::input::gamepad_controller::{Controller, Gamepad};
-use crate::input::keyboard_controller::{Key::LogicKey, Keyboard};
-use crate::scene::playground::GameScene;
+use crate::input::{
+    gamepad_controller::{Controller, Gamepad},
+    keyboard_controller::{Key::LogicKey, Keyboard},
+};
+use crate::scene::{
+    main_menu::MainMenuScene, playground::GameScene, user_interface::Scene as UIScene,
+};
 
 mod input;
 mod scene;
@@ -97,41 +99,46 @@ fn main() {
             .unwrap()
     };
 
-    let my_maze = GameScene::create(device.clone(), swapchain.format());
-
-    let mut framebuffers = my_maze.set_render(|render| {
-        window_size_dependent_setup(
-            &images,
-            render.render_pass.clone(),
-            &mut render.dynamic_state,
-        )
-    });
-
-    let mut recreate_swapchain = false;
-
-    let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
-
     // Init keyboard controller
     let keyboard_controller = Arc::new(Mutex::new(Keyboard::new()));
     // Init gamepad controller
     let mut gamepad_controller = Gamepad::new();
 
-    let sub_controller = input::Controller::Keyboard(Keyboard::create_sub_controller(
-        &keyboard_controller,
-        [
-            LogicKey(VirtualKeyCode::E),
-            LogicKey(VirtualKeyCode::D),
-            LogicKey(VirtualKeyCode::S),
-            LogicKey(VirtualKeyCode::F),
-        ],
-    ));
+    let scene = {
+        let my_maze = Arc::new(GameScene::create(device.clone(), swapchain.format()));
+        my_maze.add_tank(input::Controller::Keyboard(
+            Keyboard::create_sub_controller(
+                &keyboard_controller,
+                [
+                    LogicKey(VirtualKeyCode::E),
+                    LogicKey(VirtualKeyCode::D),
+                    LogicKey(VirtualKeyCode::S),
+                    LogicKey(VirtualKeyCode::F),
+                ],
+            ),
+        ));
+        my_maze.add_tank(input::Controller::Keyboard(
+            Keyboard::create_sub_controller(
+                &keyboard_controller,
+                [
+                    LogicKey(VirtualKeyCode::Up),
+                    LogicKey(VirtualKeyCode::Down),
+                    LogicKey(VirtualKeyCode::Left),
+                    LogicKey(VirtualKeyCode::Right),
+                ],
+            ),
+        ));
 
-    my_maze.add_tank(sub_controller);
-    let my_maze = Arc::new(my_maze);
-    {
-        let my_maze = Arc::clone(&my_maze);
-        thread::spawn(move || my_maze.run_physic());
-    }
+        let phy_maze = Arc::clone(&my_maze);
+        thread::spawn(move || phy_maze.run_physic());
+
+        Box::new(my_maze) as Box<dyn UIScene>
+    };
+    let mut framebuffers = window_size_dependent_setup(&images, &scene);
+
+    let mut recreate_swapchain = false;
+
+    let mut previous_frame_end = Some(sync::now(device.clone()).boxed());
 
     event_loop.run(move |event, _, control_flow| {
         while let Some(e) = gamepad_controller.next() {
@@ -141,10 +148,12 @@ fn main() {
                 ..
             } = e
             {
-                println!("change tank: {}", id);
-                my_maze.add_tank(input::Controller::Gamepad(
-                    Controller::create_gamepad_controller(&mut gamepad_controller, id),
-                ));
+                // if let GameScene(tank_scene) = scene.borrow() {
+                //     println!("change tank: {}", id);
+                //     tank_scene.add_tank(input::Controller::Gamepad(
+                //         Controller::create_gamepad_controller(&mut gamepad_controller, id),
+                //     ));
+                // }
             }
         }
         match event {
@@ -200,13 +209,7 @@ fn main() {
                             Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
                         };
                     swapchain = new_swapchain;
-                    framebuffers = my_maze.set_render(|render| {
-                        window_size_dependent_setup(
-                            &new_images,
-                            render.render_pass.clone(),
-                            &mut render.dynamic_state,
-                        )
-                    });
+                    framebuffers = window_size_dependent_setup(&new_images, &scene);
                     recreate_swapchain = false;
                 }
 
@@ -243,9 +246,7 @@ fn main() {
                         clear_values,
                     )
                     .unwrap();
-                my_maze
-                    .draw(&mut builder, frame_size)
-                    .unwrap();
+                scene.draw(&mut builder, frame_size).unwrap();
                 builder.end_render_pass().unwrap();
 
                 // Finish building the command buffer by calling `build`.
@@ -282,23 +283,17 @@ fn main() {
 /// This method is called once during initialization, then again whenever the window is resized
 fn window_size_dependent_setup(
     images: &[Arc<SwapchainImage<Window>>],
-    render_pass: Arc<dyn RenderPassAbstract + Send + Sync>,
-    dynamic_state: &mut DynamicState,
+    scene: &Box<dyn UIScene>,
 ) -> Vec<Arc<dyn FramebufferAbstract + Send + Sync>> {
     let dimensions = images[0].dimensions();
-
-    let viewport = Viewport {
-        origin: [0.0, 0.0],
-        dimensions: [dimensions[0] as f32, dimensions[1] as f32],
-        depth_range: 0.0..1.0,
-    };
-    dynamic_state.viewports = Some(vec![viewport]);
+    let dimensions = [dimensions[0] as f32, dimensions[1] as f32];
+    scene.reset_viewport(dimensions);
 
     images
         .iter()
         .map(|image| {
             Arc::new(
-                Framebuffer::start(render_pass.clone())
+                Framebuffer::start(scene.render_pass())
                     .add(image.clone())
                     .unwrap()
                     .build()

@@ -1,3 +1,3 @@
 pub mod main_menu;
 pub mod playground;
-mod user_interface;
+pub(crate) mod user_interface;

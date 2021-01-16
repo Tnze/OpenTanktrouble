@@ -8,7 +8,7 @@ use crate::scene::user_interface::ClickHandler;
 use super::user_interface::{Button, Element as UIElement};
 
 pub struct MainMenuScene {
-    buttons: (Button<SettingButton>, Button<SettingButton>),
+    buttons: (Button<StartButton>, Button<StartButton>),
 }
 
 impl MainMenuScene {
@@ -17,13 +17,13 @@ impl MainMenuScene {
             buttons: (
                 Button {
                     pos: Vector2::new(0.0, 0.0),
-                    size: (0.0, 0.0),
-                    click_handler: SettingButton {},
+                    size: (1.0, 1.0),
+                    click_handler: StartButton {},
                 },
                 Button {
                     pos: Vector2::new(0.0, 0.0),
                     size: (0.0, 0.0),
-                    click_handler: SettingButton {},
+                    click_handler: StartButton {},
                 },
             ),
         }
@@ -34,6 +34,7 @@ impl UIElement for MainMenuScene {
     fn draw<'a>(
         &self,
         builder: &'a mut AutoCommandBufferBuilder,
+        dimensions: [f32; 2],
     ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
         Ok(builder)
     }
@@ -42,10 +43,9 @@ impl UIElement for MainMenuScene {
     }
 }
 
+struct StartButton {}
 
-struct SettingButton {}
-
-impl ClickHandler for SettingButton {
+impl ClickHandler for StartButton {
     fn click(&self) {
         unimplemented!()
     }

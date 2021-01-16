@@ -1,20 +1,33 @@
-use cgmath::Vector2;
 // use future
-use vulkano::command_buffer::{
-    AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
+use std::sync::Arc;
+
+use cgmath::Vector2;
+use vulkano::{
+    command_buffer::{
+        AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
+    },
+    framebuffer::RenderPassAbstract,
 };
 
 pub(crate) trait Element {
     fn draw<'a>(
         &self,
         builder: &'a mut AutoCommandBufferBuilder,
+        dimensions: [f32; 2],
     ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
         Ok(builder)
     }
-    fn click(&self, pos: Vector2<f32>) -> bool;
+    fn click(&self, pos: Vector2<f32>) -> bool {
+        false
+    }
     fn touch(&self, pos: Vector2<f32>) -> bool {
         self.click(pos)
     }
+}
+
+pub(crate) trait Scene: Element {
+    fn render_pass(&self) -> Arc<dyn RenderPassAbstract + Send + Sync>;
+    fn reset_viewport(&self, dimension: [f32; 2]);
 }
 
 pub(crate) trait ClickHandler {

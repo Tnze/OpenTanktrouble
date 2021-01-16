@@ -20,13 +20,12 @@ use vulkano::{
     device::Device,
     format::Format,
     framebuffer::{RenderPassAbstract, Subpass},
-    pipeline::{GraphicsPipeline, GraphicsPipelineAbstract},
+    pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport},
 };
 
-use crate::input::{
-    Controller::{self, Gamepad, Keyboard},
-    gamepad_controller::Controller as GamepadController,
-};
+use crate::input::Controller::{self, Gamepad, Keyboard};
+
+use super::user_interface::{Element as UIElement, Scene as UIScene};
 
 pub struct GameScene {
     tanks: Mutex<Vec<Tank>>,
@@ -113,6 +112,7 @@ impl GameScene {
             write_mask: None,
             reference: None,
         };
+        let (a, b) = (0.2, 0.25);
 
         let vertex_buffer = {
             CpuAccessibleBuffer::from_iter(
@@ -120,24 +120,12 @@ impl GameScene {
                 BufferUsage::all(),
                 false,
                 [
-                    Vertex {
-                        position: (-0.5, -0.5),
-                    },
-                    Vertex {
-                        position: (0.5, -0.5),
-                    },
-                    Vertex {
-                        position: (0.5, 0.5),
-                    },
-                    Vertex {
-                        position: (-0.5, -0.5),
-                    },
-                    Vertex {
-                        position: (0.5, 0.5),
-                    },
-                    Vertex {
-                        position: (-0.5, 0.5),
-                    },
+                    Vertex { position: (-a, -b) },
+                    Vertex { position: (a, -b) },
+                    Vertex { position: (a, b) },
+                    Vertex { position: (-a, -b) },
+                    Vertex { position: (a, b) },
+                    Vertex { position: (-a, b) },
                 ]
                     .iter()
                     .cloned(),
@@ -159,8 +147,8 @@ impl GameScene {
             render: Mutex::new(RenderObjects {
                 dynamic_state,
                 pipeline,
-                uniform_buffer,
                 render_pass,
+                uniform_buffer,
                 vertex_buffer,
             }),
         }
@@ -206,12 +194,11 @@ impl GameScene {
                             Keyboard(c) => c.movement_status(),
                         };
                         let right_body = &mut physical.rigid_body_set[tank.physical_handle];
-                        let agl = right_body.position().rotation;
-                        right_body.apply_force(
-                            Rotation2::from(agl) * Vector2::new(0.0, acl * -10.0),
-                            true,
-                        );
-                        right_body.apply_torque(rot * 15.0, true);
+
+                        let rotation = &Rotation2::from(right_body.position().rotation);
+
+                        right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
+                        right_body.apply_torque(rot * 20.0, true);
                     }
                 }
                 pipeline.step(
@@ -236,8 +223,24 @@ impl GameScene {
             }
         }
     }
+}
 
-    pub fn draw<'a>(
+impl UIScene for Arc<GameScene> {
+    fn render_pass(&self) -> Arc<dyn RenderPassAbstract + Send + Sync> {
+        self.render.lock().unwrap().render_pass.clone()
+    }
+
+    fn reset_viewport(&self, dimension: [f32; 2]) {
+        self.render.lock().unwrap().dynamic_state.viewports = Some(vec![Viewport {
+            origin: [0.0, 0.0],
+            dimensions: dimension,
+            depth_range: 0.0..1.0,
+        }]);
+    }
+}
+
+impl UIElement for Arc<GameScene> {
+    fn draw<'a>(
         &self,
         builder: &'a mut AutoCommandBufferBuilder,
         dimensions: [f32; 2],
@@ -251,7 +254,7 @@ impl GameScene {
                     .get(tank.physical_handle)
                     .expect("Used an invalid rigid body handler");
                 let loc = tank_body.position().to_homogeneous();
-                let proj = Self::projection(&dimensions);
+                let proj = projection(&dimensions, 1.0 / 3.0);
                 let trans: Matrix4<_> = (proj * loc).fixed_resize(0.0);
                 let uniform_data = vs::ty::Data {
                     trans: trans.into(),
@@ -279,22 +282,19 @@ impl GameScene {
         }
         Ok(builder)
     }
+}
 
-    #[inline]
-    fn projection(frame_size: &[f32; 2]) -> Matrix3<f32> {
-        Matrix3::new(
-            1.0,
-            0.0,
-            0.0,
-            0.0,
-            frame_size[0] / frame_size[1],
-            0.0,
-            0.0,
-            0.0,
-            1.0,
-        )
-    }
-    pub fn set_render<R>(&self, f: impl FnOnce(&mut RenderObjects) -> R) -> R {
-        f(&mut *self.render.lock().unwrap())
-    }
+#[inline]
+fn projection(frame_size: &[f32; 2], scale: f32) -> Matrix3<f32> {
+    Matrix3::new(
+        scale,
+        0.0,
+        0.0,
+        0.0,
+        scale * frame_size[0] / frame_size[1],
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    )
 }

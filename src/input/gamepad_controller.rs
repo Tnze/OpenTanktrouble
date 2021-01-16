@@ -1,7 +1,9 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-use gilrs::{Axis, Button, Event, EventType, GamepadId, Gilrs};
+use gilrs::{Axis, Button, Event, GamepadId, Gilrs};
 
 pub struct Gamepad {
     gilrs: Gilrs,
@@ -23,39 +25,47 @@ impl Gamepad {
         }
         event
     }
-    fn input_event(&mut self, Event { id, event, .. }: Event) {
+    fn input_event(&mut self, Event { id, .. }: Event) {
         if let Some(ctrl) = self.controllers.get(&id) {
-            let val = {
+            *ctrl.lock().unwrap() = {
                 let gamepad = self.gilrs.gamepad(id);
-                let get_axis = |axis| gamepad.axis_data(axis).map_or(0.0, |x| x.value());
-                let get_button = |(neg, a), (pos, b)| {
-                    0.0 - gamepad.is_pressed(neg) as i32 as f32 * a
-                        + gamepad.is_pressed(pos) as i32 as f32 * b
-                };
+                let get_axis = |axis: &Axis| gamepad.axis_data(*axis).map_or(0.0, |x| x.value());
+                let get_button = |button, a| gamepad.is_pressed(button) as i32 as f32 * a;
+                let mix = |neg, pos| pos - neg;
+                let x = [Axis::RightStickX, Axis::LeftStickX]
+                    .iter()
+                    .map(get_axis)
+                    .map(|x| (x.min(0.0), x.max(0.0)))
+                    .collect::<Vec<(f32, f32)>>();
+                let y = [Axis::RightStickY, Axis::LeftStickY]
+                    .iter()
+                    .map(get_axis)
+                    .map(|x| (x.min(0.0), x.max(0.0)))
+                    .collect::<Vec<(f32, f32)>>();
                 (
-                    get_button((Button::DPadLeft, 1.0), (Button::DPadRight, 1.0)),
-                    // .max(get_axis(Axis::RightStickX))
-                    // .max(get_axis(Axis::LeftStickX)),
-                    get_button((Button::DPadDown, 0.6), (Button::DPadUp, 1.0))
-                    // .max(get_axis(Axis::RightStickX))
-                    // .max(get_axis(Axis::RightStickY)),
+                    mix(
+                        get_button(Button::DPadLeft, 1.0).min(x[0].0).min(x[1].0),
+                        get_button(Button::DPadRight, 1.0).max(x[0].1).max(x[1].1),
+                    ),
+                    mix(
+                        get_button(Button::DPadDown, 1.0).min(y[0].0).min(y[1].0),
+                        get_button(Button::DPadUp, 1.0).max(y[0].1).max(y[1].1),
+                    ),
                 )
             };
-            *ctrl.lock().unwrap() = val;
         }
     }
 }
 
 pub struct Controller {
     status: Arc<Mutex<(f32, f32)>>,
-    gamepad: gilrs::GamepadId,
 }
 
 impl Controller {
     pub fn create_gamepad_controller(parent: &mut Gamepad, gamepad: GamepadId) -> Controller {
         let status = Arc::new(Mutex::new((0.0, 0.0)));
         parent.controllers.insert(gamepad, status.clone());
-        Controller { status, gamepad }
+        Controller { status }
     }
 }
 
