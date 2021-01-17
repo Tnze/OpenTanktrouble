@@ -1,7 +1,7 @@
 // use future
 use std::sync::Arc;
 
-use cgmath::Vector2;
+use cgmath::{MetricSpace, Vector2};
 use vulkano::{
     command_buffer::{
         AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
@@ -34,13 +34,13 @@ pub(crate) trait ClickHandler {
     fn click(&self);
 }
 
-pub(crate) struct Button<C: ClickHandler> {
+pub(crate) struct RectButton<C: ClickHandler> {
     pub(crate) pos: Vector2<f32>,
     pub(crate) size: (f32, f32),
     pub(crate) click_handler: C,
 }
 
-impl<C: ClickHandler> Button<C> {
+impl<C: ClickHandler> RectButton<C> {
     pub(crate) fn click(&self, pos: Vector2<f32>) -> bool {
         if self.is_hit(pos) {
             self.click_handler.click();
@@ -53,5 +53,24 @@ impl<C: ClickHandler> Button<C> {
             && pos.x > self.pos.x + self.size.0 / 2.0
             && pos.y < self.pos.y + self.size.1 / 2.0
             && pos.y > self.pos.y + self.size.1 / 2.0
+    }
+}
+
+pub(crate) struct RoundButton<C: ClickHandler> {
+    pub(crate) pos: Vector2<f32>,
+    pub(crate) size: f32,
+    pub(crate) click_handler: C,
+}
+
+impl<C: ClickHandler> RoundButton<C> {
+    pub(crate) fn click(&self, pos: Vector2<f32>) -> bool {
+        if self.is_hit(pos) {
+            self.click_handler.click();
+            return true;
+        }
+        false
+    }
+    pub(crate) fn is_hit(&self, pos: Vector2<f32>) -> bool {
+        self.pos.distance(pos) < self.size
     }
 }

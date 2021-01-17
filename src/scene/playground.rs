@@ -6,10 +6,9 @@ use std::{
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderSet, NarrowPhase},
-    na::{Matrix4, Rotation2, Vector2},
+    na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use rapier2d::na::Matrix3;
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{
@@ -116,7 +115,7 @@ impl GameScene {
 
         let vertex_buffer = {
             CpuAccessibleBuffer::from_iter(
-                device.clone(),
+                device,
                 BufferUsage::all(),
                 false,
                 [

@@ -20,19 +20,16 @@ impl Keyboard {
         }
     }
     pub fn input_event(&mut self, e: &KeyboardInput) {
-        match e {
-            KeyboardInput {
-                scancode,
-                virtual_keycode,
-                state,
-                ..
-            } => {
-                self.key_map.insert(Key::PhysicKey(*scancode), *state);
-                if let Some(code) = virtual_keycode {
-                    self.key_map.insert(Key::LogicKey(*code), *state);
-                }
-            }
-        };
+        let KeyboardInput {
+            scancode,
+            virtual_keycode,
+            state,
+            ..
+        } = e;
+        self.key_map.insert(Key::PhysicKey(*scancode), *state);
+        if let Some(code) = virtual_keycode {
+            self.key_map.insert(Key::LogicKey(*code), *state);
+        }
     }
 }
 

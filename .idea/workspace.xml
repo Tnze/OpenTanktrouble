@@ -14,7 +14,11 @@
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/input/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/input/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/keyboard_controller.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/user_interface.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/user_interface.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -85,11 +89,26 @@
   <component name="RunAnythingCache">
     <option name="myCommands">
       <command value="cargo fmt" />
+      <command value="cargo doc" />
     </option>
   </component>
   <component name="RunManager" selected="Cargo.Debug">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Clippy" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="clippy" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
       <option name="allFeatures" value="false" />
@@ -130,6 +149,34 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Test" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
+      <option name="command" value="test " />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="doc" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="doc" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="fmt" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="fmt" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -151,12 +198,16 @@
     </configuration>
     <list>
       <item itemvalue="Cargo.Debug" />
+      <item itemvalue="Cargo.Test" />
+      <item itemvalue="Cargo.Clippy" />
       <item itemvalue="Cargo.Release" />
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.fmt" />
+      <item itemvalue="Cargo.doc" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.doc" />
         <item itemvalue="Cargo.fmt" />
         <item itemvalue="Cargo.fmt" />
       </list>

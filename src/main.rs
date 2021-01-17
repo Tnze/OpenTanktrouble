@@ -2,6 +2,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
+use std::borrow::Borrow;
 
 use gilrs::EventType;
 use vulkano::{
@@ -134,7 +135,7 @@ fn main() {
 
         Box::new(my_maze.clone()) as Box<dyn UIScene>
     };
-    let mut framebuffers = window_size_dependent_setup(&images, &scene);
+    let mut framebuffers = window_size_dependent_setup(&images, scene.borrow());
 
     let mut recreate_swapchain = false;
 
@@ -186,11 +187,11 @@ fn main() {
                         }
                         VirtualKeyCode::K if state == ElementState::Pressed => {
                             scene = Box::new(MainMenuScene::new());
-                            framebuffers = window_size_dependent_setup(&images, &scene);
+                            framebuffers = window_size_dependent_setup(&images, scene.borrow());
                         }
                         VirtualKeyCode::L if state == ElementState::Pressed => {
                             scene = Box::new(my_maze.clone());
-                            framebuffers = window_size_dependent_setup(&images, &scene);
+                            framebuffers = window_size_dependent_setup(&images, scene.borrow());
                         }
                         VirtualKeyCode::F11 if state == ElementState::Pressed => {
                             let window = surface.window();
@@ -215,7 +216,7 @@ fn main() {
                             Err(e) => panic!("Failed to recreate swapchain: {:?}", e),
                         };
                     swapchain = new_swapchain;
-                    framebuffers = window_size_dependent_setup(&new_images, &scene);
+                    framebuffers = window_size_dependent_setup(&new_images, scene.borrow());
                     recreate_swapchain = false;
                 }
 
@@ -289,7 +290,7 @@ fn main() {
 /// This method is called once during initialization, then again whenever the window is resized
 fn window_size_dependent_setup(
     images: &[Arc<SwapchainImage<Window>>],
-    scene: &Box<dyn UIScene>,
+    scene: &dyn UIScene,
 ) -> Vec<Arc<dyn FramebufferAbstract + Send + Sync>> {
     let dimensions = images[0].dimensions();
     let dimensions = [dimensions[0] as f32, dimensions[1] as f32];
