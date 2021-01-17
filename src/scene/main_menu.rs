@@ -89,10 +89,12 @@ pub struct Vertex {
 }
 vulkano::impl_vertex!(Vertex, position);
 
-struct WindowIter<Item, Iter> {
+struct PairIter<Item, Iter> {
     iter: Iter,
     pre: Option<Item>,
 }
+
+impl<T: ?Sized> WindowIterator for T where T: Iterator {}
 
 /// # Examples
 ///
@@ -106,11 +108,19 @@ struct WindowIter<Item, Iter> {
 /// assert_eq!(Some((3, 4)), output.next());
 /// assert_eq!(Some((4, 5)), output.next());
 /// ```
-fn windows<Item, Iter>(iter: Iter) -> WindowIter<Item, Iter> {
-    WindowIter { iter, pre: None }
+trait WindowIterator: Iterator {
+    fn sliding_pair(self) -> PairIter<Self::Item, Self>
+        where
+            Self: Sized,
+    {
+        PairIter {
+            iter: self,
+            pre: None,
+        }
+    }
 }
 
-impl<Iter, Item> Iterator for WindowIter<Item, Iter>
+impl<Iter, Item> Iterator for PairIter<Item, Iter>
     where
         Iter: Iterator<Item=Item>,
         Item: Clone,
@@ -133,9 +143,12 @@ pub fn gen_gear_vertexes(teeth: i32, ir: f32, or: f32) -> Vec<Vertex> {
         let (sin, cos) = angle.sin_cos();
         (sin * length, cos * length)
     };
-    for (pre, mid, cur) in windows((1..teeth).map(|i| i as f32 * central_angle))
-        .map(|(pre, cur)| (pre, (pre + cur) / 2.0, cur))
-    {
+    for (pre, mid, cur) in {
+        (1..teeth)
+            .map(|i| i as f32 * central_angle)
+            .sliding_pair()
+            .map(|(pre, cur)| (pre, (pre + cur) / 2.0, cur))
+    } {
         vertexes.push(Vertex {
             position: calc_pos(pre, ir),
         });
