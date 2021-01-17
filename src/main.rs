@@ -186,7 +186,7 @@ fn main() {
                             *control_flow = ControlFlow::Exit;
                         }
                         VirtualKeyCode::K if state == ElementState::Pressed => {
-                            scene = Box::new(MainMenuScene::new());
+                            scene = Box::new(MainMenuScene::new(&device));
                             framebuffers = window_size_dependent_setup(&images, scene.borrow());
                         }
                         VirtualKeyCode::L if state == ElementState::Pressed => {

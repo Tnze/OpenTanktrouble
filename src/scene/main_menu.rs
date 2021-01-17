@@ -2,12 +2,13 @@ use std::sync::Arc;
 
 use cgmath::{num_traits::FloatConst, Vector2};
 use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
+    buffer::{BufferUsage, CpuAccessibleBuffer},
     command_buffer::{
         AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
     },
     framebuffer::RenderPassAbstract,
 };
+use vulkano::device::Device;
 
 use super::user_interface::{
     ClickHandler, Element as UIElement, RectButton, RoundButton, Scene as UIScene,
@@ -18,7 +19,7 @@ pub struct MainMenuScene {
 }
 
 impl MainMenuScene {
-    pub fn new() -> MainMenuScene {
+    pub fn new(device: &Arc<Device>) -> MainMenuScene {
         MainMenuScene {
             buttons: (
                 RectButton {
@@ -29,7 +30,7 @@ impl MainMenuScene {
                 RoundButton {
                     pos: Vector2::new(0.0, 0.0),
                     size: 0.1,
-                    click_handler: StartButton {},
+                    click_handler: StartButton::new(device.clone()),
                 },
             ),
         }
@@ -62,17 +63,18 @@ impl UIElement for MainMenuScene {
 struct StartButton {}
 
 impl StartButton {
-    // fn new() -> StartButton {
-    //     let vertex_buffer = {
-    //         CpuAccessibleBuffer::from_iter(
-    //             device,
-    //             BufferUsage::all(),
-    //             false,
-    //             gen_gear_vertexes(12, 0.1, 0.12).iter().cloned(),
-    //         )
-    //         .unwrap()
-    //     };
-    // }
+    fn new(device: Arc<Device>) -> StartButton {
+        let _vertex_buffer = {
+            CpuAccessibleBuffer::from_iter(
+                device,
+                BufferUsage::all(),
+                false,
+                gen_gear_vertexes(12, 0.1, 0.12, 0.2).iter().cloned(),
+            )
+                .unwrap()
+        };
+        unimplemented!()
+    }
 }
 
 impl ClickHandler for StartButton {
@@ -89,74 +91,25 @@ pub struct Vertex {
 }
 vulkano::impl_vertex!(Vertex, position);
 
-struct PairIter<Item, Iter> {
-    iter: Iter,
-    pre: Option<Item>,
-}
-
-impl<T: ?Sized> WindowIterator for T where T: Iterator {}
-
-/// # Examples
-///
-/// ```rust
-/// let data: Vec<u64> = vec![1, 2, 3, 4, 5];
-/// let input = data.iter();
-/// let output = windows(input);
-///
-/// assert_eq!(Some((1, 2)), output.next());
-/// assert_eq!(Some((2, 3)), output.next());
-/// assert_eq!(Some((3, 4)), output.next());
-/// assert_eq!(Some((4, 5)), output.next());
-/// ```
-trait WindowIterator: Iterator {
-    fn sliding_pair(self) -> PairIter<Self::Item, Self>
-        where
-            Self: Sized,
-    {
-        PairIter {
-            iter: self,
-            pre: None,
-        }
-    }
-}
-
-impl<Iter, Item> Iterator for PairIter<Item, Iter>
-    where
-        Iter: Iterator<Item=Item>,
-        Item: Clone,
-{
-    type Item = (Item, Item);
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let pre = self.pre.take().or_else(|| self.iter.next());
-        let current = self.iter.next();
-        self.pre = current.clone();
-        pre.zip(current)
-    }
-}
-
 /// Generate vertexes of a gear pattern.
-pub fn gen_gear_vertexes(teeth: i32, ir: f32, or: f32) -> Vec<Vertex> {
-    let mut vertexes = Vec::with_capacity(teeth as usize * 3);
+pub fn gen_gear_vertexes(teeth: i32, ir: f32, or: f32, overlap: f32) -> Vec<Vertex> {
     let central_angle = 2.0 * f32::PI() / teeth as f32;
+    let overlap_angle = central_angle * overlap;
     let calc_pos = |angle: f32, length| {
         let (sin, cos) = angle.sin_cos();
         (sin * length, cos * length)
     };
-    for (pre, mid, cur) in {
-        (1..teeth)
-            .map(|i| i as f32 * central_angle)
-            .sliding_pair()
-            .map(|(pre, cur)| (pre, (pre + cur) / 2.0, cur))
-    } {
+
+    let mut vertexes = Vec::with_capacity(teeth as usize * 3);
+    for i in 1..teeth {
         vertexes.push(Vertex {
-            position: calc_pos(pre, ir),
+            position: calc_pos((i - 1) as f32 - overlap_angle, ir),
         });
         vertexes.push(Vertex {
-            position: calc_pos(mid, or),
+            position: calc_pos((i as f32 - 0.5) * central_angle, or),
         });
         vertexes.push(Vertex {
-            position: calc_pos(cur, ir),
+            position: calc_pos(i as f32 + overlap_angle, ir),
         });
     }
     vertexes
