@@ -26,14 +26,11 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
-  linux_stable:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: open_tanktrouble.exe
+        path: ./target/debug/open_tanktrouble.exe
   macos_stable:
     runs-on: macos-latest
     steps:
@@ -42,3 +39,8 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: open_tanktrouble
+        path: ./target/debug/open_tanktrouble
