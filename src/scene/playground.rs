@@ -9,6 +9,7 @@ use rapier2d::{
     na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
+use rapier2d::geometry::{ColliderBuilder, ColliderHandle};
 use vulkano::{
     buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
     command_buffer::{
@@ -34,7 +35,8 @@ pub struct GameScene {
 
 struct Tank {
     controller: Controller,
-    physical_handle: RigidBodyHandle,
+    rigid_body_handle: RigidBodyHandle,
+    collider_handle: ColliderHandle,
 }
 
 struct PhysicalStatus {
@@ -160,17 +162,20 @@ impl GameScene {
             .mass(1.0, true)
             .linear_damping(10.0)
             .principal_angular_inertia(1.0, true)
-            .angular_damping(10.0)
+            .angular_damping(5.0)
             .build();
-        let physical_handle = self
-            .physical
-            .lock()
-            .unwrap()
-            .rigid_body_set
-            .insert(right_body);
+        let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
+        let physical = &mut *self.physical.lock().unwrap();
+        let rigid_body_handle = physical.rigid_body_set.insert(right_body);
+        let collider_handle =
+            physical
+                .collider_set
+                .insert(collider, rigid_body_handle, &mut physical.rigid_body_set);
+
         self.tanks.lock().unwrap().push(Tank {
             controller,
-            physical_handle,
+            rigid_body_handle,
+            collider_handle,
         });
     }
 
@@ -192,7 +197,7 @@ impl GameScene {
                             Gamepad(c) => c.movement_status(),
                             Keyboard(c) => c.movement_status(),
                         };
-                        let right_body = &mut physical.rigid_body_set[tank.physical_handle];
+                        let right_body = &mut physical.rigid_body_set[tank.rigid_body_handle];
 
                         let rotation = &Rotation2::from(right_body.position().rotation);
 
@@ -250,7 +255,7 @@ impl UIElement for Arc<GameScene> {
             let uniform_buffer_subbuffer = {
                 let tank_body = physical
                     .rigid_body_set
-                    .get(tank.physical_handle)
+                    .get(tank.rigid_body_handle)
                     .expect("Used an invalid rigid body handler");
                 let loc = tank_body.position().to_homogeneous();
                 let proj = projection(&dimensions, 1.0 / 3.0);
