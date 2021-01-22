@@ -1,14 +1,5 @@
-use std::sync::Arc;
-
 use cgmath::{num_traits::FloatConst, Vector2};
-use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer},
-    command_buffer::{
-        AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
-    },
-    framebuffer::RenderPassAbstract,
-};
-use vulkano::device::Device;
+use std::sync::Arc;
 
 use super::user_interface::{
     ClickHandler, Element as UIElement, RectButton, RoundButton, Scene as UIScene,

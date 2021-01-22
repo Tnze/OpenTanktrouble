@@ -1,13 +1,6 @@
+use cgmath::{MetricSpace, Vector2};
 // use future
 use std::sync::Arc;
-
-use cgmath::{MetricSpace, Vector2};
-use vulkano::{
-    command_buffer::{
-        AutoCommandBufferBuilder, DrawError, pool::standard::StandardCommandPoolBuilder,
-    },
-    framebuffer::RenderPassAbstract,
-};
 
 pub(crate) trait Element {
     fn draw<'a>(

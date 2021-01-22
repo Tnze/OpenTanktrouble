@@ -3,40 +3,27 @@ use std::{
     thread, time,
 };
 
+use crossbeam_channel::{bounded, Receiver, Sender};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
-    geometry::{BroadPhase, ColliderSet, NarrowPhase},
+    geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
     na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use rapier2d::geometry::{ColliderBuilder, ColliderHandle};
-use vulkano::{
-    buffer::{BufferUsage, CpuAccessibleBuffer, CpuBufferPool},
-    command_buffer::{
-        AutoCommandBufferBuilder, DrawError, DynamicState,
-        pool::standard::StandardCommandPoolBuilder,
-    },
-    descriptor::{descriptor_set::PersistentDescriptorSet, PipelineLayoutAbstract},
-    device::Device,
-    format::Format,
-    framebuffer::{RenderPassAbstract, Subpass},
-    pipeline::{GraphicsPipeline, GraphicsPipelineAbstract, viewport::Viewport},
-};
+use wgpu::CommandBuffer;
+use winit::dpi::PhysicalSize;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
-use super::user_interface::{Element as UIElement, Scene as UIScene};
-
-pub struct GameScene {
-    tanks: Mutex<Vec<Tank>>,
-    physical: Mutex<PhysicalStatus>,
-    render: Mutex<RenderObjects>,
+trait Scene {
+    fn render(&mut self) -> wgpu::CommandBuffer;
+    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>);
 }
 
-struct Tank {
-    controller: Controller,
-    rigid_body_handle: RigidBodyHandle,
-    collider_handle: ColliderHandle,
+pub struct GameScene {
+    clean_color: wgpu::Color,
+    render_pipeline: wgpu::RenderPipeline,
+    update_chan: Receiver<Vector2<f32>>,
 }
 
 struct PhysicalStatus {
@@ -50,108 +37,121 @@ struct PhysicalStatus {
     joint_set: JointSet,
 }
 
-pub struct RenderObjects {
-    pub dynamic_state: DynamicState,
-    pub pipeline: Arc<dyn GraphicsPipelineAbstract + Send + Sync>,
-    pub render_pass: Arc<dyn RenderPassAbstract + Send + Sync>,
-    uniform_buffer: CpuBufferPool<vs::ty::Data>,
-    vertex_buffer: Arc<CpuAccessibleBuffer<[Vertex]>>,
+struct PhysicTank {
+    controller: Controller,
+    rigid_body_handle: RigidBodyHandle,
+    collider_handle: ColliderHandle,
 }
 
-mod vs {
-    vulkano_shaders::shader! { ty: "vertex", path: "src/scene/shaders/tank.vert" }
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    position: [f32; 3],
 }
 
-mod fs {
-    vulkano_shaders::shader! { ty: "fragment", path: "src/scene/shaders/tank.frag" }
+impl Vertex {
+    fn desc<'a>() -> wgpu::VertexBufferDescriptor<'a> {
+        wgpu::VertexBufferDescriptor {
+            stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::InputStepMode::Vertex,
+            attributes: &[wgpu::VertexAttributeDescriptor {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float3,
+            }],
+        }
+    }
 }
-
-#[derive(Default, Copy, Clone)]
-pub struct Vertex {
-    position: (f32, f32),
-}
-vulkano::impl_vertex!(Vertex, position);
 
 impl GameScene {
-    pub fn new(device: Arc<Device>, format: Format) -> GameScene {
-        let vs = vs::Shader::load(Arc::clone(&device)).unwrap();
-        let fs = fs::Shader::load(Arc::clone(&device)).unwrap();
+    pub fn new(device: wgpu::Device) -> GameScene {
+        // Create render objects
+        const A: f32 = 0.2;
+        const B: f32 = 0.25;
+        const VERTICES: &[Vertex] = &[
+            Vertex {
+                position: [-A, -B, 0.0],
+            },
+            Vertex {
+                position: [A, -B, 0.0],
+            },
+            Vertex {
+                position: [A, B, 0.0],
+            },
+            Vertex {
+                position: [-A, -B, 0.0],
+            },
+            Vertex {
+                position: [A, B, 0.0],
+            },
+            Vertex {
+                position: [-A, B, 0.0],
+            },
+        ];
 
-        let render_pass = Arc::new(Box::new(
-            vulkano::single_pass_renderpass!(
-                device.clone(),
-                attachments: {
-                    color: {
-                        load: Clear,
-                        store: Store,
-                        format: format,
-                        samples: 1,
-                    }
+        let clean_color = wgpu::Color {
+            r: 0.1,
+            g: 0.2,
+            b: 0.3,
+            a: 1.0,
+        };
+
+        let render_pipeline = {
+            let vs_module = device.create_shader_module(wgpu::include_spirv!("shader.vert.spv"));
+            let fs_module = device.create_shader_module(wgpu::include_spirv!("shader.frag.spv"));
+
+            let render_pipeline_layout =
+                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("Tank Render Pipeline Layout"),
+                    bind_group_layouts: &[],
+                    push_constant_ranges: &[],
+                });
+
+            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("Tank Render Pipeline"),
+                layout: Some(&render_pipeline_layout),
+                vertex_stage: wgpu::ProgrammableStageDescriptor {
+                    module: &vs_module,
+                    entry_point: "main",
                 },
-                pass: {color: [color],  depth_stencil: {}}
-            )
-                .unwrap(),
-        ));
-        let pipeline = Arc::new(
-            GraphicsPipeline::start()
-                .vertex_input_single_buffer::<Vertex>()
-                .vertex_shader(vs.main_entry_point(), ())
-                .triangle_list()
-                .viewports_dynamic_scissors_irrelevant(1)
-                .fragment_shader(fs.main_entry_point(), ())
-                .render_pass(Subpass::from(render_pass.clone(), 0).unwrap())
-                .build(device.clone())
-                .unwrap(),
-        );
-
-        let uniform_buffer = CpuBufferPool::<vs::ty::Data>::new(device.clone(), BufferUsage::all());
-        let dynamic_state = DynamicState {
-            line_width: None,
-            viewports: None,
-            scissors: None,
-            compare_mask: None,
-            write_mask: None,
-            reference: None,
+                fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+                    module: &fs_module,
+                    entry_point: "main",
+                }),
+                rasterization_state: Some(wgpu::RasterizationStateDescriptor {
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: wgpu::CullMode::Back,
+                    depth_bias: 0,
+                    depth_bias_slope_scale: 0.0,
+                    depth_bias_clamp: 0.0,
+                    clamp_depth: false,
+                }),
+                color_states: &[wgpu::ColorStateDescriptor {
+                    format: sc_desc.format,
+                    color_blend: wgpu::BlendDescriptor::REPLACE,
+                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
+                    write_mask: wgpu::ColorWrite::ALL,
+                }],
+                primitive_topology: wgpu::PrimitiveTopology::TriangleList,
+                depth_stencil_state: None,
+                vertex_state: wgpu::VertexStateDescriptor {
+                    index_format: wgpu::IndexFormat::Uint16,
+                    vertex_buffers: &[Vertex::desc()],
+                },
+                sample_count: 1,
+                sample_mask: !0,
+                alpha_to_coverage_enabled: false,
+            })
         };
-        let (a, b) = (0.2, 0.25);
 
-        let vertex_buffer = {
-            CpuAccessibleBuffer::from_iter(
-                device,
-                BufferUsage::all(),
-                false,
-                [
-                    Vertex { position: (-a, -b) },
-                    Vertex { position: (a, -b) },
-                    Vertex { position: (a, b) },
-                    Vertex { position: (-a, -b) },
-                    Vertex { position: (a, b) },
-                    Vertex { position: (-a, b) },
-                ]
-                    .iter()
-                    .cloned(),
-            )
-                .unwrap()
-        };
+        // Start physic emulation
+        let (s, r) = bounded(0);
+        thread::spawn(move || Self::run_physic(s));
 
         GameScene {
-            tanks: Mutex::new(Vec::new()),
-            physical: Mutex::new(PhysicalStatus {
-                seq_number: 0,
-                integration_parameters: IntegrationParameters::default(),
-                broad_phase: BroadPhase::new(),
-                narrow_phase: NarrowPhase::new(),
-                rigid_body_set: RigidBodySet::new(),
-                collider_set: ColliderSet::new(),
-                joint_set: JointSet::new(),
-            }),
-            render: Mutex::new(RenderObjects {
-                dynamic_state,
-                pipeline,
-                render_pass,
-                uniform_buffer,
-                vertex_buffer,
-            }),
+            clean_color,
+            render_pipeline,
+            update_chan: r,
         }
     }
 
@@ -179,112 +179,74 @@ impl GameScene {
         });
     }
 
-    pub fn run_physic(&self) -> ! {
+    fn run_physic(update_chan: Sender<Vector2<f32>>) -> ! {
+        let mut physical = PhysicalStatus {
+            seq_number: 0,
+            integration_parameters: IntegrationParameters::default(),
+            broad_phase: BroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            rigid_body_set: RigidBodySet::new(),
+            collider_set: ColliderSet::new(),
+            joint_set: JointSet::new(),
+        };
         let start_time = time::Instant::now();
         let mut pipeline = PhysicsPipeline::new();
-        let dt = time::Duration::from_secs_f32(
-            self.physical.lock().unwrap().integration_parameters.dt(),
-        );
+        let dt = time::Duration::from_secs_f32(physical.integration_parameters.dt());
         let gravity = Vector2::new(0.0, 0.0);
         loop {
-            let sleep_time = {
-                let physical = &mut *self.physical.lock().unwrap();
-                {
-                    let tanks = &mut *self.tanks.lock().unwrap();
-                    // Apply the control to the tank.
-                    for tank in tanks.iter() {
-                        let (rot, acl) = match &tank.controller {
-                            Gamepad(c) => c.movement_status(),
-                            Keyboard(c) => c.movement_status(),
-                        };
-                        let right_body = &mut physical.rigid_body_set[tank.rigid_body_handle];
+            {
+                let tanks = &mut *self.tanks.lock().unwrap();
+                // Apply the control to the tank.
+                for tank in tanks.iter() {
+                    let (rot, acl) = match &tank.controller {
+                        Gamepad(c) => c.movement_status(),
+                        Keyboard(c) => c.movement_status(),
+                    };
+                    let right_body = &mut physical.rigid_body_set[tank.rigid_body_handle];
 
-                        let rotation = &Rotation2::from(right_body.position().rotation);
+                    let rotation = &Rotation2::from(right_body.position().rotation);
 
-                        right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
-                        right_body.apply_torque(rot * 20.0, true);
-                    }
+                    right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
+                    right_body.apply_torque(rot * 20.0, true);
                 }
-                pipeline.step(
-                    &gravity,
-                    &physical.integration_parameters,
-                    &mut physical.broad_phase,
-                    &mut physical.narrow_phase,
-                    &mut physical.rigid_body_set,
-                    &mut physical.collider_set,
-                    &mut physical.joint_set,
-                    None,
-                    None,
-                    &(),
-                );
-                // Increase simulate sequence number.
-                physical.seq_number += 1;
-                // Calculate sleep time.
-                (dt * physical.seq_number).checked_sub(start_time.elapsed())
-            };
-            if let Some(d) = sleep_time {
+            }
+            pipeline.step(
+                &gravity,
+                &physical.integration_parameters,
+                &mut physical.broad_phase,
+                &mut physical.narrow_phase,
+                &mut physical.rigid_body_set,
+                &mut physical.collider_set,
+                &mut physical.joint_set,
+                None,
+                None,
+                &(),
+            );
+            // Increase simulate sequence number.
+            physical.seq_number += 1;
+            // Send update and sleep
+            update_chan.send_deadline(
+                Vector2::new(0.0, 0.0),
+                start_time + (dt * physical.seq_number),
+            );
+            if let Some(d) = (dt * physical.seq_number).checked_sub(start_time.elapsed()) {
                 thread::sleep(d);
             }
         }
     }
 }
 
-impl UIScene for Arc<GameScene> {
-    fn render_pass(&self) -> Arc<dyn RenderPassAbstract + Send + Sync> {
-        self.render.lock().unwrap().render_pass.clone()
+impl Scene for GameScene {
+    fn render(&mut self) -> CommandBuffer {
+        self.update_chan.try_recv(); // Update data from physical thread
+        unimplemented!()
     }
 
-    fn reset_viewport(&self, dimension: [f32; 2]) {
-        self.render.lock().unwrap().dynamic_state.viewports = Some(vec![Viewport {
-            origin: [0.0, 0.0],
-            dimensions: dimension,
-            depth_range: 0.0..1.0,
-        }]);
-    }
-}
-
-impl UIElement for Arc<GameScene> {
-    fn draw<'a>(
-        &self,
-        builder: &'a mut AutoCommandBufferBuilder,
-        dimensions: [f32; 2],
-    ) -> Result<&'a mut AutoCommandBufferBuilder<StandardCommandPoolBuilder>, DrawError> {
-        let render = &mut *self.render.lock().unwrap();
-        let physical = &mut *self.physical.lock().unwrap();
-        for tank in self.tanks.lock().unwrap().iter() {
-            let uniform_buffer_subbuffer = {
-                let tank_body = physical
-                    .rigid_body_set
-                    .get(tank.rigid_body_handle)
-                    .expect("Used an invalid rigid body handler");
-                let loc = tank_body.position().to_homogeneous();
-                let proj = projection(&dimensions, 1.0 / 3.0);
-                let trans: Matrix4<_> = (proj * loc).fixed_resize(0.0);
-                let uniform_data = vs::ty::Data {
-                    trans: trans.into(),
-                };
-                render
-                    .uniform_buffer
-                    .next(uniform_data)
-                    .expect("GPU memory is not enough")
-            };
-            let layout = render.pipeline.descriptor_set_layout(0).unwrap();
-            let set = Arc::new(
-                PersistentDescriptorSet::start(layout.clone())
-                    .add_buffer(uniform_buffer_subbuffer)
-                    .unwrap()
-                    .build()
-                    .unwrap(),
-            );
-            builder.draw(
-                render.pipeline.clone(),
-                &render.dynamic_state,
-                vec![render.vertex_buffer.clone()],
-                set,
-                (),
-            )?;
-        }
-        Ok(builder)
+    fn resize(&mut self, new_size: PhysicalSize<u32>) {
+        self.size = new_size;
+        self.sc_desc.width = new_size.width;
+        self.sc_desc.height = new_size.height;
+        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 }
 

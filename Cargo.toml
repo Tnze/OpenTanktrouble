@@ -1,6 +1,6 @@
 [package]
 name = "open_tanktrouble"
-description = "An open-source replica of a party game called Tanktrouble."
+description = "An open-source replica of A party game called Tanktrouble."
 version = "0.1.0"
 authors = ["Tnze <cjd001113@outlook.com>"]
 edition = "2018"
@@ -10,14 +10,23 @@ repository = "https://github.com/Tnze/OpenTanktrouble"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-specs = "0.16"
-specs-derive = "0.4"
+futures = "0.3"
+crossbeam-channel = "0.5.0"
+log = { version = "0.4", features = ["std", "serde"] }
+env_logger = "0.7"
 
-vulkano = "0.20"
-vulkano-win = "0.20"
-vulkano-shaders = "0.20"
+wgpu = "0.6"
+bytemuck = { version = "1.5.0", features = ["derive"] }
 winit = "0.24"
+msgbox = "0.6.0"
 
 gilrs = "0.8"
 rapier2d = { version = "0.4.2", features = ["enhanced-determinism"] }
 cgmath = "0.18"
+
+[build-dependencies]
+anyhow = "1.0"
+fs_extra = "1.1"
+rayon = "1.4"
+glob = "0.3"
+shaderc = "0.6"
