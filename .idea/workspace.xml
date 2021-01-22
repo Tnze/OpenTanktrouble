@@ -14,7 +14,7 @@
   <component name="ChangeListManager">
     <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/build.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/window.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/window.rs" afterDir="false" />
@@ -139,6 +139,20 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Expand open_tanktrouble::scene::playground" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="expand --bin open_tanktrouble --color=always --theme=GitHub --tests scene::playground" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="Release" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="run --release" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -181,6 +195,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.Clippy" />
@@ -188,9 +207,11 @@
       <item itemvalue="Cargo.Release" />
       <item itemvalue="Cargo.Test" />
       <item itemvalue="Cargo.fmt" />
+      <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
         <item itemvalue="Cargo.fmt" />
       </list>
     </recent_temporary>
@@ -243,6 +264,7 @@
       <workItem from="1611203748059" duration="618000" />
       <workItem from="1611225209341" duration="9641000" />
       <workItem from="1611289356191" duration="12247000" />
+      <workItem from="1611321930703" duration="8590000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>

@@ -4,7 +4,8 @@ use std::{
     time::Duration,
 };
 
-use crossbeam_channel::{bounded, Receiver, select, Sender, tick};
+use crossbeam_channel::{bounded, Receiver, Sender, tick};
+use crossbeam_channel::internal::SelectHandle;
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
@@ -16,14 +17,18 @@ use winit::dpi::PhysicalSize;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
-trait Scene {
-    fn render(&mut self) -> wgpu::CommandBuffer;
+pub(crate) trait Scene {
+    fn render(
+        &mut self,
+        device: &wgpu::Device,
+        frame: &wgpu::SwapChainTexture,
+    ) -> wgpu::CommandBuffer;
 }
 
 pub struct GameScene {
     clean_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
-    update_chan: Receiver<Vector2<f32>>,
+    update_chan: Receiver<Box<Vec<TankInstance>>>,
 }
 
 struct PhysicalStatus {
@@ -56,17 +61,21 @@ impl Vertex {
         wgpu::VertexBufferDescriptor {
             stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::InputStepMode::Vertex,
-            attributes: &[wgpu::VertexAttributeDescriptor {
-                offset: 0,
-                shader_location: 0,
-                format: wgpu::VertexFormat::Float3,
-            }],
+            attributes: &wgpu::vertex_attr_array![0 => Float3],
         }
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct TankInstance {
+    position: [f32; 2],
+    velocity: [f32; 2],
+    rotation: f32,
+}
+
 impl GameScene {
-    pub fn new(device: wgpu::Device, sc_desc: wgpu::SwapChainDescriptor) -> GameScene {
+    pub(crate) fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> GameScene {
         // Create render objects
         const A: f32 = 0.2;
         const B: f32 = 0.25;
@@ -149,7 +158,7 @@ impl GameScene {
         };
 
         // Start physic emulation
-        let (s, r) = bounded(0);
+        let (update_sender, r) = bounded(0);
         thread::spawn(move || {
             let mut physical = PhysicalStatus {
                 tanks: Vec::new(),
@@ -166,10 +175,33 @@ impl GameScene {
             let ticker = tick(Duration::from_secs_f32(
                 physical.integration_parameters.dt(),
             ));
-            loop {
-                select! {
-                recv(ticker) -> _ => physical.update_tick(),
-                send(s, Vector2::new(0.0, 0.0)) -> _ => {},
+            'next_update: loop {
+                physical.update_tick();
+                let update_data = physical
+                    .tanks
+                    .iter()
+                    .map(|tank| {
+                        let rigid_body =
+                            physical.rigid_body_set.get(tank.rigid_body_handle).unwrap();
+                        let position = rigid_body.position();
+                        let velocity = rigid_body.linvel();
+                        TankInstance {
+                            position: position.translation.vector.into(),
+                            velocity: [velocity.x, velocity.y],
+                            rotation: position.rotation.angle(),
+                        }
+                    })
+                    .collect::<Vec<TankInstance>>();
+                loop {
+                    crossbeam_channel::select! {
+                        recv(ticker) -> _ => continue 'next_update,
+                        send(update_sender, Box::new(update_data)) -> _ => break,
+                    }
+                }
+                loop {
+                    crossbeam_channel::select! {
+                        recv(ticker) -> _ => continue 'next_update,
+                    }
                 }
             }
         });
@@ -181,7 +213,7 @@ impl GameScene {
         }
     }
 
-    // /// Add a tank to this game scene. Controlled by the controller.
+    /* /// Add a tank to this game scene. Controlled by the controller.
     // pub fn add_tank(&self, controller: Controller) {
     //     let right_body = RigidBodyBuilder::new_dynamic()
     //         .can_sleep(true)
@@ -203,11 +235,11 @@ impl GameScene {
     //         rigid_body_handle,
     //         collider_handle,
     //     });
-    // }
+    // }*/
 }
 
 impl Scene for GameScene {
-    fn render(&mut self) -> CommandBuffer {
+    fn render(&mut self, device: &wgpu::Device, frame: &wgpu::SwapChainTexture) -> CommandBuffer {
         self.update_chan.try_recv(); // Update data from physical thread
         unimplemented!()
     }

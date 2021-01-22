@@ -2,6 +2,8 @@ use std::error::Error;
 
 use winit::window::Window;
 
+use crate::scene::playground::{GameScene, Scene};
+
 pub struct WindowState {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -9,6 +11,8 @@ pub struct WindowState {
     sc_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
     size: winit::dpi::PhysicalSize<u32>,
+
+    current_scene: Box<dyn Scene>,
 }
 
 impl WindowState {
@@ -42,6 +46,7 @@ impl WindowState {
             present_mode: wgpu::PresentMode::Fifo,
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
+        let current_scene = Box::new(GameScene::new(&device, &sc_desc));
 
         Ok(Self {
             surface,
@@ -50,6 +55,7 @@ impl WindowState {
             sc_desc,
             swap_chain,
             size,
+            current_scene,
         })
     }
 
@@ -61,7 +67,14 @@ impl WindowState {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
+    pub(crate) fn switch_scene(&mut self, scene: Box<dyn Scene>) {
+        self.current_scene = scene;
+    }
+
     pub fn render(&mut self) -> Result<(), wgpu::SwapChainError> {
-        todo!();
+        let frame = self.swap_chain.get_current_frame()?.output;
+        let command_buffer = self.current_scene.render(&self.device, &frame);
+        self.queue.submit(std::iter::once(command_buffer));
+        Ok(())
     }
 }

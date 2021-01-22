@@ -1,8 +1,8 @@
 use std::{
+    error::Error,
     sync::{Arc, Mutex},
     thread,
 };
-use std::error::Error;
 
 use futures::executor::block_on;
 use gilrs::EventType;
@@ -32,7 +32,6 @@ fn abort(err: Box<dyn Error>) -> ! {
 fn main() {
     // Init logger
     env_logger::init();
-
     // Create window
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
