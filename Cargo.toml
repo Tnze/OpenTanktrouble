@@ -12,8 +12,8 @@ repository = "https://github.com/Tnze/OpenTanktrouble"
 [dependencies]
 futures = "0.3"
 crossbeam-channel = "0.5.0"
-log = { version = "0.4", features = ["std", "serde"] }
-env_logger = "0.7"
+log = "0.4"
+env_logger = "0.8"
 
 wgpu = "0.6"
 bytemuck = { version = "1.5.0", features = ["derive"] }

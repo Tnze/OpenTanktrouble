@@ -1,19 +1,14 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
 
-use crossbeam_channel::{bounded, Receiver, Sender, tick};
-use crossbeam_channel::internal::SelectHandle;
+use crossbeam_channel::{bounded, Receiver, tick};
+use log::{debug, error, info, log_enabled};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
     na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use wgpu::{CommandBuffer, PipelineLayout, util::DeviceExt};
-use winit::dpi::PhysicalSize;
+use wgpu::{CommandBuffer, util::DeviceExt};
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
@@ -81,6 +76,7 @@ struct TankInstance {
 
 impl GameScene {
     pub(crate) fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> GameScene {
+        info!("Creating GameScene");
         // Create render objects
         const A: f32 = 0.2;
         const B: f32 = 0.25;
@@ -171,6 +167,7 @@ impl GameScene {
         // Start physic emulation
         let (update_sender, r) = bounded(0);
         thread::spawn(move || {
+            info!("Update thread spawned");
             let mut physical = PhysicalStatus {
                 tanks: Vec::new(),
 
@@ -254,7 +251,11 @@ impl GameScene {
 
 impl Scene for GameScene {
     fn render(&mut self, device: &wgpu::Device, frame: &wgpu::SwapChainTexture) -> CommandBuffer {
-        self.update_chan.try_recv(); // Update data from physical thread
+        // Update data from physical thread
+        if let Ok(instances) = self.update_chan.try_recv() {
+            self.instances = instances;
+        }
+        // Building command buffer
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("GameScene Render Encoder"),
         });

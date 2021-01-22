@@ -1,19 +1,17 @@
 use std::error::Error;
 
 use futures::executor::block_on;
-use gilrs::EventType;
-use log::{debug, error, info, Level, log_enabled};
+use log::{debug, error, info, log_enabled};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Fullscreen, Window, WindowBuilder},
+    window::{Fullscreen, WindowBuilder},
 };
 
 use crate::input::{
     gamepad_controller::{Controller, Gamepad},
     keyboard_controller::{Key::LogicKey, Keyboard},
 };
-use crate::scene::playground::GameScene;
 
 mod input;
 mod scene;
@@ -22,7 +20,7 @@ mod window;
 fn abort(err: Box<dyn Error>) -> ! {
     error!("Error in main: {}", err);
     msgbox::create("Error", &*err.to_string(), msgbox::IconType::Error);
-    panic!("Error in main: {}", err);
+    panic!("{}", err);
 }
 
 fn main() {
@@ -33,6 +31,7 @@ fn main() {
     let window = WindowBuilder::new()
         .build(&event_loop)
         .unwrap_or_else(|e| abort(Box::new(e)));
+    info!("Successfully create window");
     let mut state = block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e));
 
     // Init controller
@@ -40,7 +39,7 @@ fn main() {
     let mut gamepad_controller = Gamepad::new();
 
     event_loop.run(move |event, _, control_flow| {
-        while let Some(e) = gamepad_controller.next() {}
+        while let Some(_e) = gamepad_controller.next() {}
         match event {
             Event::WindowEvent {
                 ref event,
@@ -59,10 +58,12 @@ fn main() {
                         virtual_keycode: Some(VirtualKeyCode::F11),
                         ..
                     } => {
-                        window.set_fullscreen(match window.fullscreen() {
+                        let fullscreen_mode = match window.fullscreen() {
                             None => Some(Fullscreen::Borderless(None)),
                             Some(_) => None,
-                        });
+                        };
+                        info!("Fullscreen mode is changing to {:?}", fullscreen_mode);
+                        window.set_fullscreen(fullscreen_mode);
                     }
                     // Other keyboard event
                     _ => keyboard_controller.input_event(&input),
@@ -80,9 +81,12 @@ fn main() {
                     // Recreate the swap_chain if lost
                     Err(wgpu::SwapChainError::Lost) => state.resize(None),
                     // The system is out of memory, we should probably quit
-                    Err(wgpu::SwapChainError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                    Err(wgpu::SwapChainError::OutOfMemory) => {
+                        error!("SwapChain out of memory");
+                        *control_flow = ControlFlow::Exit
+                    }
                     // All other errors (Outdated, Timeout) should be resolved by the next frame
-                    Err(e) => eprintln!("{:?}", e),
+                    Err(e) => error!("{:?}", e),
                 }
             }
             Event::MainEventsCleared => {
