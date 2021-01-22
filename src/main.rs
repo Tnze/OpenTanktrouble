@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::error::Error;
 
 use futures::executor::block_on;
 use gilrs::EventType;

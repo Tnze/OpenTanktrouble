@@ -12,7 +12,7 @@ use rapier2d::{
     na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use wgpu::{CommandBuffer, PipelineLayout};
+use wgpu::{CommandBuffer, PipelineLayout, util::DeviceExt};
 use winit::dpi::PhysicalSize;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
@@ -28,6 +28,11 @@ pub(crate) trait Scene {
 pub struct GameScene {
     clean_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
+
+    tank_module_buffer: wgpu::Buffer,
+    tank_module_num: u32,
+
+    instances: Box<Vec<TankInstance>>,
     update_chan: Receiver<Box<Vec<TankInstance>>>,
 }
 
@@ -106,6 +111,12 @@ impl GameScene {
             b: 0.3,
             a: 1.0,
         };
+
+        let tank_module_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(VERTICES),
+            usage: wgpu::BufferUsage::VERTEX,
+        });
 
         let render_pipeline = {
             let vs_module =
@@ -209,6 +220,9 @@ impl GameScene {
         GameScene {
             clean_color,
             render_pipeline,
+            tank_module_buffer,
+            tank_module_num: VERTICES.len() as u32,
+            instances: Box::new(Vec::new()),
             update_chan: r,
         }
     }
@@ -241,7 +255,26 @@ impl GameScene {
 impl Scene for GameScene {
     fn render(&mut self, device: &wgpu::Device, frame: &wgpu::SwapChainTexture) -> CommandBuffer {
         self.update_chan.try_recv(); // Update data from physical thread
-        unimplemented!()
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("GameScene Render Encoder"),
+        });
+        {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                    attachment: &frame.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(self.clean_color),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_vertex_buffer(0, self.tank_module_buffer.slice(..));
+            render_pass.draw(0..self.tank_module_num, 0..(self.instances.len() as u32));
+        }
+        encoder.finish()
     }
 }
 
