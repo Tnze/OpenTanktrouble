@@ -1,23 +1,23 @@
 use std::{
     sync::{Arc, Mutex},
-    thread, time,
+    thread,
+    time::Duration,
 };
 
-use crossbeam_channel::{bounded, Receiver, Sender};
+use crossbeam_channel::{bounded, Receiver, select, Sender, tick};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
     na::{Matrix3, Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use wgpu::CommandBuffer;
+use wgpu::{CommandBuffer, PipelineLayout};
 use winit::dpi::PhysicalSize;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
 trait Scene {
     fn render(&mut self) -> wgpu::CommandBuffer;
-    fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>);
 }
 
 pub struct GameScene {
@@ -27,8 +27,10 @@ pub struct GameScene {
 }
 
 struct PhysicalStatus {
+    tanks: Vec<PhysicTank>,
     seq_number: u32,
 
+    pipeline: PhysicsPipeline,
     integration_parameters: IntegrationParameters,
     broad_phase: BroadPhase,
     narrow_phase: NarrowPhase,
@@ -64,7 +66,7 @@ impl Vertex {
 }
 
 impl GameScene {
-    pub fn new(device: wgpu::Device) -> GameScene {
+    pub fn new(device: wgpu::Device, sc_desc: wgpu::SwapChainDescriptor) -> GameScene {
         // Create render objects
         const A: f32 = 0.2;
         const B: f32 = 0.25;
@@ -97,8 +99,10 @@ impl GameScene {
         };
 
         let render_pipeline = {
-            let vs_module = device.create_shader_module(wgpu::include_spirv!("shader.vert.spv"));
-            let fs_module = device.create_shader_module(wgpu::include_spirv!("shader.frag.spv"));
+            let vs_module =
+                device.create_shader_module(wgpu::include_spirv!("shaders/tank.vert.spv"));
+            let fs_module =
+                device.create_shader_module(wgpu::include_spirv!("shaders/tank.frag.spv"));
 
             let render_pipeline_layout =
                 device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -146,7 +150,29 @@ impl GameScene {
 
         // Start physic emulation
         let (s, r) = bounded(0);
-        thread::spawn(move || Self::run_physic(s));
+        thread::spawn(move || {
+            let mut physical = PhysicalStatus {
+                tanks: Vec::new(),
+
+                seq_number: 0,
+                pipeline: PhysicsPipeline::new(),
+                integration_parameters: IntegrationParameters::default(),
+                broad_phase: BroadPhase::new(),
+                narrow_phase: NarrowPhase::new(),
+                rigid_body_set: RigidBodySet::new(),
+                collider_set: ColliderSet::new(),
+                joint_set: JointSet::new(),
+            };
+            let ticker = tick(Duration::from_secs_f32(
+                physical.integration_parameters.dt(),
+            ));
+            loop {
+                select! {
+                recv(ticker) -> _ => physical.update_tick(),
+                send(s, Vector2::new(0.0, 0.0)) -> _ => {},
+                }
+            }
+        });
 
         GameScene {
             clean_color,
@@ -155,85 +181,29 @@ impl GameScene {
         }
     }
 
-    /// Add a tank to this game scene. Controlled by the controller.
-    pub fn add_tank(&self, controller: Controller) {
-        let right_body = RigidBodyBuilder::new_dynamic()
-            .can_sleep(true)
-            .mass(1.0, true)
-            .linear_damping(10.0)
-            .principal_angular_inertia(1.0, true)
-            .angular_damping(5.0)
-            .build();
-        let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
-        let physical = &mut *self.physical.lock().unwrap();
-        let rigid_body_handle = physical.rigid_body_set.insert(right_body);
-        let collider_handle =
-            physical
-                .collider_set
-                .insert(collider, rigid_body_handle, &mut physical.rigid_body_set);
-
-        self.tanks.lock().unwrap().push(Tank {
-            controller,
-            rigid_body_handle,
-            collider_handle,
-        });
-    }
-
-    fn run_physic(update_chan: Sender<Vector2<f32>>) -> ! {
-        let mut physical = PhysicalStatus {
-            seq_number: 0,
-            integration_parameters: IntegrationParameters::default(),
-            broad_phase: BroadPhase::new(),
-            narrow_phase: NarrowPhase::new(),
-            rigid_body_set: RigidBodySet::new(),
-            collider_set: ColliderSet::new(),
-            joint_set: JointSet::new(),
-        };
-        let start_time = time::Instant::now();
-        let mut pipeline = PhysicsPipeline::new();
-        let dt = time::Duration::from_secs_f32(physical.integration_parameters.dt());
-        let gravity = Vector2::new(0.0, 0.0);
-        loop {
-            {
-                let tanks = &mut *self.tanks.lock().unwrap();
-                // Apply the control to the tank.
-                for tank in tanks.iter() {
-                    let (rot, acl) = match &tank.controller {
-                        Gamepad(c) => c.movement_status(),
-                        Keyboard(c) => c.movement_status(),
-                    };
-                    let right_body = &mut physical.rigid_body_set[tank.rigid_body_handle];
-
-                    let rotation = &Rotation2::from(right_body.position().rotation);
-
-                    right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
-                    right_body.apply_torque(rot * 20.0, true);
-                }
-            }
-            pipeline.step(
-                &gravity,
-                &physical.integration_parameters,
-                &mut physical.broad_phase,
-                &mut physical.narrow_phase,
-                &mut physical.rigid_body_set,
-                &mut physical.collider_set,
-                &mut physical.joint_set,
-                None,
-                None,
-                &(),
-            );
-            // Increase simulate sequence number.
-            physical.seq_number += 1;
-            // Send update and sleep
-            update_chan.send_deadline(
-                Vector2::new(0.0, 0.0),
-                start_time + (dt * physical.seq_number),
-            );
-            if let Some(d) = (dt * physical.seq_number).checked_sub(start_time.elapsed()) {
-                thread::sleep(d);
-            }
-        }
-    }
+    // /// Add a tank to this game scene. Controlled by the controller.
+    // pub fn add_tank(&self, controller: Controller) {
+    //     let right_body = RigidBodyBuilder::new_dynamic()
+    //         .can_sleep(true)
+    //         .mass(1.0, true)
+    //         .linear_damping(10.0)
+    //         .principal_angular_inertia(1.0, true)
+    //         .angular_damping(5.0)
+    //         .build();
+    //     let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
+    //     let physical = &mut *self.physical.lock().unwrap();
+    //     let rigid_body_handle = physical.rigid_body_set.insert(right_body);
+    //     let collider_handle =
+    //         physical
+    //             .collider_set
+    //             .insert(collider, rigid_body_handle, &mut physical.rigid_body_set);
+    //
+    //     self.tanks.lock().unwrap().push(Tank {
+    //         controller,
+    //         rigid_body_handle,
+    //         collider_handle,
+    //     });
+    // }
 }
 
 impl Scene for GameScene {
@@ -241,12 +211,39 @@ impl Scene for GameScene {
         self.update_chan.try_recv(); // Update data from physical thread
         unimplemented!()
     }
+}
 
-    fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        self.size = new_size;
-        self.sc_desc.width = new_size.width;
-        self.sc_desc.height = new_size.height;
-        self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
+impl PhysicalStatus {
+    fn update_tick(&mut self) {
+        let gravity = Vector2::new(0.0, 0.0);
+
+        // Apply the control to the tank.
+        for tank in self.tanks.iter() {
+            let (rot, acl) = match &tank.controller {
+                Gamepad(c) => c.movement_status(),
+                Keyboard(c) => c.movement_status(),
+            };
+            let right_body = &mut self.rigid_body_set[tank.rigid_body_handle];
+            let rotation = &Rotation2::from(right_body.position().rotation);
+
+            right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
+            right_body.apply_torque(rot * 20.0, true);
+        }
+
+        self.pipeline.step(
+            &gravity,
+            &self.integration_parameters,
+            &mut self.broad_phase,
+            &mut self.narrow_phase,
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.joint_set,
+            None,
+            None,
+            &(),
+        );
+        // Increase simulate sequence number.
+        self.seq_number += 1;
     }
 }
 

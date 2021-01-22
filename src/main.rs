@@ -23,10 +23,10 @@ mod input;
 mod scene;
 mod window;
 
-fn abort<E: Error>(err: E) -> ! {
+fn abort(err: Box<dyn Error>) -> ! {
     error!("Error in main: {}", err);
     msgbox::create("Error", &*err.to_string(), msgbox::IconType::Error);
-    panic!(err)
+    panic!("Error in main: {}", err);
 }
 
 fn main() {
@@ -37,27 +37,15 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .build(&event_loop)
-        .unwrap_or_else(abort);
-    let mut state = block_on(window::WindowState::new(&window)).unwrap_or_else(abort);
+        .unwrap_or_else(|e| abort(Box::new(e)));
+    let mut state = block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e));
 
     // Init controller
-    let keyboard_controller = Keyboard::new();
+    let mut keyboard_controller = Keyboard::new();
     let mut gamepad_controller = Gamepad::new();
 
     event_loop.run(move |event, _, control_flow| {
-        while let Some(e) = gamepad_controller.next() {
-            if let gilrs::Event {
-                id,
-                event: EventType::Connected,
-                ..
-            } = e
-            {
-                println!("change tank: {}", id);
-                my_maze.add_tank(input::Controller::Gamepad(
-                    Controller::create_gamepad_controller(&mut gamepad_controller, id),
-                ));
-            }
-        }
+        while let Some(e) = gamepad_controller.next() {}
         match event {
             Event::WindowEvent {
                 ref event,
@@ -76,14 +64,13 @@ fn main() {
                         virtual_keycode: Some(VirtualKeyCode::F11),
                         ..
                     } => {
-                        let window = surface.window();
                         window.set_fullscreen(match window.fullscreen() {
                             None => Some(Fullscreen::Borderless(None)),
                             Some(_) => None,
                         });
                     }
                     // Other keyboard event
-                    _ => keyboard_controller.lock().unwrap().input_event(&input),
+                    _ => keyboard_controller.input_event(&input),
                 },
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::Resized(physical_size) => state.resize(Some(*physical_size)),
@@ -93,7 +80,6 @@ fn main() {
                 _ => {}
             },
             Event::RedrawRequested(_) => {
-                state.update();
                 match state.render() {
                     Ok(_) => {}
                     // Recreate the swap_chain if lost

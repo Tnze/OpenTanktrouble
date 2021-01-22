@@ -12,8 +12,8 @@ pub struct WindowState {
 }
 
 impl WindowState {
-    pub async fn new(w: &Window) -> Result<Self, Box<dyn Error>> {
-        let size = w.inner_size();
+    pub async fn new(window: &Window) -> Result<Self, Box<dyn Error>> {
+        let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
         let surface = unsafe { instance.create_surface(window) };
