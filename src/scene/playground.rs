@@ -20,8 +20,10 @@ pub(crate) trait Scene {
     fn render(
         &mut self,
         device: &wgpu::Device,
+        queue: &wgpu::Queue,
         frame: &wgpu::SwapChainTexture,
-    ) -> wgpu::CommandBuffer;
+        frame_size: (u32, u32),
+    ) -> Result<(), wgpu::SwapChainError>;
     fn add_controller(&self, ctrl: Controller);
 }
 
@@ -72,6 +74,13 @@ struct TankInstance {
     rotation: f32,
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct Uniforms {
+    view_proj: [[f32; 4]; 4],
+    forecast: f32,
+}
+
 impl GameScene {
     pub(crate) fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> GameScene {
         info!("Creating GameScene");
@@ -104,7 +113,7 @@ impl GameScene {
         let instances_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instances_data),
-            usage: wgpu::BufferUsage::VERTEX,
+            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
         });
 
         let render_pipeline = {
@@ -261,21 +270,39 @@ impl GameScene {
 }
 
 impl Scene for GameScene {
-    fn render(&mut self, device: &wgpu::Device, frame: &wgpu::SwapChainTexture) -> CommandBuffer {
+    fn render(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        frame: &wgpu::SwapChainTexture,
+        frame_size: (u32, u32),
+    ) -> Result<(), wgpu::SwapChainError> {
         // Update data from physical thread
         if let Ok(instances) = self.update_chan.try_recv() {
             self.last_update = Instant::now();
+            if self.instances_data.len() < instances.len() {
+                // Recreate buffer
+                self.instances_buffer =
+                    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Instance Buffer"),
+                        contents: bytemuck::cast_slice(&instances),
+                        usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+                    });
+            } else {
+                // Just send to the existing buffer
+                queue.write_buffer(
+                    &self.instances_buffer,
+                    0,
+                    bytemuck::cast_slice(&instances),
+                );
+            }
             self.instances_data = instances;
-            self.instances_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&self.instances_data),
-                usage: wgpu::BufferUsage::VERTEX,
-            });
         }
         // Building command buffer
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("GameScene Render Encoder"),
         });
+        encoder.push_debug_group("Draw tanks");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
@@ -293,7 +320,9 @@ impl Scene for GameScene {
             render_pass.set_vertex_buffer(1, self.instances_buffer.slice(..));
             render_pass.draw(0..self.tank_module_num, 0..(self.instances_data.len() as _));
         }
-        encoder.finish()
+        encoder.pop_debug_group();
+        queue.submit(std::iter::once(encoder.finish()));
+        Ok(())
     }
 
     fn add_controller(&self, ctrl: Controller) {
@@ -315,8 +344,8 @@ impl PhysicalStatus {
             };
             let right_body = &mut self.rigid_body_set[tank.rigid_body_handle];
             let rotation = &Rotation2::from(right_body.position().rotation);
-            right_body.apply_force(rotation * Vector2::new(0.0, acl * -15.0), true);
-            right_body.apply_torque(rot * 20.0, true);
+            right_body.apply_force(rotation * Vector2::new(0.0, acl * 15.0), true);
+            right_body.apply_torque(-rot * 20.0, true);
         }
 
         self.pipeline.step(
@@ -339,7 +368,6 @@ impl PhysicalStatus {
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
             .mass(1.0, true)
-            .translation(0.3, 0.3)
             .linear_damping(10.0)
             .principal_angular_inertia(1.0, true)
             .angular_damping(5.0)

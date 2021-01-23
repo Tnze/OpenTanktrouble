@@ -12,17 +12,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Drawing working well">
-      <change afterPath="$PROJECT_DIR$/src/scene/maze.rs" afterDir="false" />
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/input/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/keyboard_controller.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/main_menu.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/main_menu.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.vert" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/tank.vert" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.vert.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/tank.vert.spv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/window.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/window.rs" afterDir="false" />
     </list>
@@ -432,7 +424,14 @@
       <option name="project" value="LOCAL" />
       <updated>1611340584217</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="Can control tnak by keyboard">
+      <created>1611402030792</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1611402030792</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -483,7 +482,8 @@
     <MESSAGE value="Do not use Iterator in the vertex generator" />
     <MESSAGE value="Implement instant data update" />
     <MESSAGE value="Drawing working well" />
-    <option name="LAST_COMMIT_MESSAGE" value="Drawing working well" />
+    <MESSAGE value="Can control tnak by keyboard" />
+    <option name="LAST_COMMIT_MESSAGE" value="Can control tnak by keyboard" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

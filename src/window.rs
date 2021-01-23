@@ -70,8 +70,9 @@ impl WindowState {
 
     pub fn render(&mut self) -> Result<(), wgpu::SwapChainError> {
         let frame = self.swap_chain.get_current_frame()?.output;
-        let command_buffer = self.current_scene.render(&self.device, &frame);
-        self.queue.submit(std::iter::once(command_buffer));
+        let frame_size = (self.sc_desc.width, self.sc_desc.height);
+        self.current_scene
+            .render(&self.device, &self.queue, &frame, frame_size)?;
         Ok(())
     }
 
