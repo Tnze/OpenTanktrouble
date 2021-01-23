@@ -1,18 +1,16 @@
-use std::error::Error;
-use std::process::exit;
-use std::rc::Rc;
+use std::{error::Error, process::exit};
 
 use futures::executor::block_on;
-use log::{debug, error, info, log_enabled};
+#[allow(unused_imports)]
+use log::{debug, error, info};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, WindowBuilder},
 };
-use winit::platform::macos::WindowExtMacOS;
 
 use crate::input::{
-    gamepad_controller::{Controller, Gamepad},
+    gamepad_controller::Gamepad,
     keyboard_controller::{Key::LogicKey, Keyboard},
 };
 
@@ -40,7 +38,7 @@ fn main() {
         block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e.as_ref()));
 
     // Init controller
-    let mut keyboard_controller = Keyboard::new();
+    let keyboard_controller = Keyboard::new();
     let mut gamepad_controller = Gamepad::new();
 
     event_loop.run(move |event, _, control_flow| {

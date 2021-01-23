@@ -1,18 +1,20 @@
 use std::{
+    error::Error,
     thread,
     time::{Duration, Instant},
 };
-use std::error::Error;
 
+use cgmath::SquareMatrix;
 use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
+#[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
-    na::{Matrix3, Matrix4, Rotation2, Vector2},
+    na::{Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
-use wgpu::{CommandBuffer, util::DeviceExt};
+use wgpu::util::DeviceExt;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
@@ -31,12 +33,17 @@ pub struct GameScene {
     clean_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
 
+    uniforms: Uniforms,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+
     tank_module_buffer: wgpu::Buffer,
     tank_module_num: u32,
 
-    instances_data: Box<Vec<TankInstance>>,
+    instances_data: Vec<TankInstance>,
     instances_buffer: wgpu::Buffer,
-    update_chan: Receiver<Box<Vec<TankInstance>>>,
+
+    update_chan: Receiver<Vec<TankInstance>>,
     add_controller_chan: Sender<Controller>,
     last_update: Instant,
 }
@@ -109,11 +116,42 @@ impl GameScene {
             usage: wgpu::BufferUsage::VERTEX,
         });
 
-        let instances_data = Box::new(Vec::new());
+        let instances_data = Vec::new();
         let instances_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
             contents: bytemuck::cast_slice(&instances_data),
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+        });
+
+        let uniforms = Uniforms {
+            view_proj: cgmath::Matrix4::identity().into(),
+            forecast: 0.0,
+        };
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: bytemuck::cast_slice(&[uniforms]),
+            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+        });
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("uniform_bind_group_layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStage::VERTEX,
+                    ty: wgpu::BindingType::UniformBuffer {
+                        dynamic: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::Buffer(uniform_buffer.slice(..)),
+            }],
+            label: Some("uniform_bind_group"),
         });
 
         let render_pipeline = {
@@ -125,7 +163,7 @@ impl GameScene {
             let render_pipeline_layout =
                 device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Tank Render Pipeline Layout"),
-                    bind_group_layouts: &[],
+                    bind_group_layouts: &[&uniform_bind_group_layout],
                     push_constant_ranges: &[],
                 });
 
@@ -190,6 +228,9 @@ impl GameScene {
         GameScene {
             clean_color,
             render_pipeline,
+            uniforms,
+            uniform_buffer,
+            uniform_bind_group,
             tank_module_buffer,
             tank_module_num: VERTICES.len() as u32,
             instances_data,
@@ -201,7 +242,7 @@ impl GameScene {
     }
 
     fn manage(
-        update_sender: Sender<Box<Vec<TankInstance>>>,
+        update_sender: Sender<Vec<TankInstance>>,
         ctrl_receiver: Receiver<Controller>,
     ) -> Result<(), Box<dyn Error>> {
         info!("Update thread spawned");
@@ -254,7 +295,7 @@ impl GameScene {
                         continue 'next_update;
                     }
                     i if i == update_sender_index => {
-                        oper.send(&update_sender, Box::new(update_data.take().unwrap()))?;
+                        oper.send(&update_sender, update_data.take().unwrap())?;
                         // Remove this selector because we only need
                         // send the data once after each update tick
                         selector.remove(update_sender_index);
@@ -290,14 +331,19 @@ impl Scene for GameScene {
                     });
             } else {
                 // Just send to the existing buffer
-                queue.write_buffer(
-                    &self.instances_buffer,
-                    0,
-                    bytemuck::cast_slice(&instances),
-                );
+                queue.write_buffer(&self.instances_buffer, 0, bytemuck::cast_slice(&instances));
             }
             self.instances_data = instances;
         }
+        // Update uniform
+        self.uniforms.view_proj =
+            projection(&[frame_size.0 as f32, frame_size.1 as f32], 0.4).into();
+        self.uniforms.forecast = self.last_update.elapsed().as_secs_f32() * 1.0 / 60_f32;
+        queue.write_buffer(
+            &self.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniforms]),
+        );
         // Building command buffer
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("GameScene Render Encoder"),
@@ -316,6 +362,7 @@ impl Scene for GameScene {
                 depth_stencil_attachment: None,
             });
             render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.tank_module_buffer.slice(..));
             render_pass.set_vertex_buffer(1, self.instances_buffer.slice(..));
             render_pass.draw(0..self.tank_module_num, 0..(self.instances_data.len() as _));
@@ -344,8 +391,8 @@ impl PhysicalStatus {
             };
             let right_body = &mut self.rigid_body_set[tank.rigid_body_handle];
             let rotation = &Rotation2::from(right_body.position().rotation);
-            right_body.apply_force(rotation * Vector2::new(0.0, acl * 15.0), true);
-            right_body.apply_torque(-rot * 20.0, true);
+            right_body.apply_force(rotation * Vector2::new(0.0, acl * 20.0), true);
+            right_body.apply_torque(-rot * 30.0, true);
         }
 
         self.pipeline.step(
@@ -370,7 +417,7 @@ impl PhysicalStatus {
             .mass(1.0, true)
             .linear_damping(10.0)
             .principal_angular_inertia(1.0, true)
-            .angular_damping(5.0)
+            .angular_damping(10.0)
             .build();
         let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
         let rigid_body_handle = self.rigid_body_set.insert(right_body);
@@ -387,13 +434,20 @@ impl PhysicalStatus {
 }
 
 #[inline]
-fn projection(frame_size: &[f32; 2], scale: f32) -> Matrix3<f32> {
-    Matrix3::new(
+fn projection(frame_size: &[f32; 2], scale: f32) -> Matrix4<f32> {
+    Matrix4::new(
         scale,
         0.0,
         0.0,
         0.0,
+        0.0,
         scale * frame_size[0] / frame_size[1],
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
         0.0,
         0.0,
         0.0,
