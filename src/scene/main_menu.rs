@@ -1,10 +1,6 @@
 use cgmath::{num_traits::FloatConst, Vector2};
 use std::sync::Arc;
 
-use super::user_interface::{
-    ClickHandler, Element as UIElement, RectButton, RoundButton, Scene as UIScene,
-};
-
 pub struct MainMenuScene {
     buttons: (RectButton<StartButton>, RoundButton<StartButton>),
 }
@@ -76,11 +72,9 @@ impl ClickHandler for StartButton {
 
 impl StartButton {}
 
-#[derive(Default, Copy, Clone)]
 pub struct Vertex {
     position: (f32, f32),
 }
-vulkano::impl_vertex!(Vertex, position);
 
 /// Generate vertexes of a gear pattern.
 pub fn gen_gear_vertexes(teeth: i32, ir: f32, or: f32, overlap: f32) -> Vec<Vertex> {

@@ -1,4 +1,6 @@
 use std::error::Error;
+use std::process::exit;
+use std::rc::Rc;
 
 use futures::executor::block_on;
 use log::{debug, error, info, log_enabled};
@@ -7,6 +9,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, WindowBuilder},
 };
+use winit::platform::macos::WindowExtMacOS;
 
 use crate::input::{
     gamepad_controller::{Controller, Gamepad},
@@ -17,10 +20,11 @@ mod input;
 mod scene;
 mod window;
 
-fn abort(err: Box<dyn Error>) -> ! {
+fn abort(err: &dyn Error) -> ! {
     error!("Error in main: {}", err);
-    msgbox::create("Error", &*err.to_string(), msgbox::IconType::Error);
-    panic!("{}", err);
+    msgbox::create("Error", &*err.to_string(), msgbox::IconType::Error)
+        .unwrap_or_else(|err2| error!("Display message-box error: {:?}", err2));
+    exit(2);
 }
 
 fn main() {
@@ -30,9 +34,10 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .build(&event_loop)
-        .unwrap_or_else(|e| abort(Box::new(e)));
+        .unwrap_or_else(|e| abort(&e));
     info!("Successfully create window");
-    let mut state = block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e));
+    let mut state =
+        block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e.as_ref()));
 
     // Init controller
     let mut keyboard_controller = Keyboard::new();
@@ -65,6 +70,18 @@ fn main() {
                         info!("Fullscreen mode is changing to {:?}", fullscreen_mode);
                         window.set_fullscreen(fullscreen_mode);
                     }
+                    KeyboardInput {
+                        state: ElementState::Pressed,
+                        virtual_keycode: Some(VirtualKeyCode::Q),
+                        ..
+                    } => state.add_controller(input::Controller::Keyboard(
+                        keyboard_controller.create_sub_controller([
+                            LogicKey(VirtualKeyCode::E),
+                            LogicKey(VirtualKeyCode::D),
+                            LogicKey(VirtualKeyCode::S),
+                            LogicKey(VirtualKeyCode::F),
+                        ]),
+                    )),
                     // Other keyboard event
                     _ => keyboard_controller.input_event(&input),
                 },
@@ -76,15 +93,13 @@ fn main() {
                 _ => {}
             },
             Event::RedrawRequested(_) => {
+                use wgpu::SwapChainError::{Lost, OutOfMemory};
                 match state.render() {
                     Ok(_) => {}
                     // Recreate the swap_chain if lost
-                    Err(wgpu::SwapChainError::Lost) => state.resize(None),
+                    Err(Lost) => state.resize(None),
                     // The system is out of memory, we should probably quit
-                    Err(wgpu::SwapChainError::OutOfMemory) => {
-                        error!("SwapChain out of memory");
-                        *control_flow = ControlFlow::Exit
-                    }
+                    Err(OutOfMemory) => abort(&OutOfMemory),
                     // All other errors (Outdated, Timeout) should be resolved by the next frame
                     Err(e) => error!("{:?}", e),
                 }

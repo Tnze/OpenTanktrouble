@@ -1,5 +1,7 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use winit::event::{ElementState, KeyboardInput, ScanCode, VirtualKeyCode};
 
@@ -10,50 +12,48 @@ pub enum Key {
 }
 
 pub struct Keyboard {
-    key_map: HashMap<Key, ElementState>,
+    key_map: Arc<Mutex<HashMap<Key, ElementState>>>,
 }
 
 impl Keyboard {
     pub fn new() -> Keyboard {
         Keyboard {
-            key_map: HashMap::new(),
+            key_map: Arc::new(Mutex::new(HashMap::new())),
         }
     }
-    pub fn input_event(&mut self, e: &KeyboardInput) {
+    pub fn input_event(&self, e: &KeyboardInput) {
         let KeyboardInput {
             scancode,
             virtual_keycode,
             state,
             ..
         } = e;
-        self.key_map.insert(Key::PhysicKey(*scancode), *state);
+        let key_map = &mut *self.key_map.lock().unwrap();
+        key_map.insert(Key::PhysicKey(*scancode), *state);
         if let Some(code) = virtual_keycode {
-            self.key_map.insert(Key::LogicKey(*code), *state);
+            key_map.insert(Key::LogicKey(*code), *state);
         }
     }
 }
 
 impl Keyboard {
-    pub fn create_sub_controller(
-        parent: &Arc<Mutex<Keyboard>>,
-        movement_keys: [Key; 4],
-    ) -> Controller {
+    pub fn create_sub_controller(&self, movement_keys: [Key; 4]) -> Controller {
         Controller {
             movement_keys,
-            parent: Arc::clone(parent),
+            key_map: self.key_map.clone(),
         }
     }
 }
 
 pub struct Controller {
     movement_keys: [Key; 4],
-    parent: Arc<Mutex<Keyboard>>,
+    key_map: Arc<Mutex<HashMap<Key, ElementState>>>,
 }
 
 impl Controller {
     pub(crate) fn movement_status(&self) -> (f32, f32) {
-        let parent = &self.parent.lock().unwrap().key_map;
-        let get_value = |key, pressed| match parent.get(&self.movement_keys[key]) {
+        let key_map = &*self.key_map.lock().unwrap();
+        let get_value = |key, pressed| match key_map.get(&self.movement_keys[key]) {
             Some(ElementState::Pressed) => pressed,
             _ => 0.0,
         };

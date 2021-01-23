@@ -2,6 +2,7 @@ use std::error::Error;
 
 use winit::window::Window;
 
+use crate::input::Controller;
 use crate::scene::playground::{GameScene, Scene};
 
 pub struct WindowState {
@@ -67,14 +68,14 @@ impl WindowState {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    pub(crate) fn switch_scene(&mut self, scene: Box<dyn Scene>) {
-        self.current_scene = scene;
-    }
-
     pub fn render(&mut self) -> Result<(), wgpu::SwapChainError> {
         let frame = self.swap_chain.get_current_frame()?.output;
         let command_buffer = self.current_scene.render(&self.device, &frame);
         self.queue.submit(std::iter::once(command_buffer));
         Ok(())
+    }
+
+    pub fn add_controller(&self, ctrl: Controller) {
+        self.current_scene.add_controller(ctrl);
     }
 }
