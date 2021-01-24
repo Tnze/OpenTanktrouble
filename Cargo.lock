@@ -1180,7 +1180,6 @@ checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
 dependencies = [
  "autocfg",
  "hashbrown",
- "serde",
 ]
 
 [[package]]
@@ -1992,20 +1991,20 @@ checksum = "f7fcbcb6854db4daf4b40e918151bef54839bad4ae83f3254ea158e520a7515e"
 dependencies = [
  "approx",
  "arrayvec",
- "bit-vec",
- "bitflags",
- "crossbeam",
- "downcast-rs",
- "generational-arena",
- "indexmap",
- "instant",
- "nalgebra",
- "ncollide2d",
- "num-derive",
- "num-traits",
- "rustc-hash",
- "simba",
- "vec_map",
+    "bit-vec",
+    "bitflags",
+    "crossbeam",
+    "downcast-rs",
+    "generational-arena",
+    "instant",
+    "nalgebra",
+    "ncollide2d",
+    "num-derive",
+    "num-traits",
+    "rayon",
+    "rustc-hash",
+    "simba",
+    "vec_map",
 ]
 
 [[package]]
@@ -2104,8 +2103,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2aa654bc32eb9ca14cce1a084abc9dfe43949a4547c35269a094c39272db3bb"
 dependencies = [
  "lazy_static",
- "log",
- "winapi 0.3.9",
+    "log",
+    "winapi 0.3.9",
 ]
 
 [[package]]
@@ -2115,12 +2114,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71d301d4193d031abdd79ff7e3dd721168a9572ef3fe51a1517aba235bd8f86e"
 
 [[package]]
+name = "safe_arch"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1ff3d6d9696af502cc3110dacce942840fb06ff4514cad92236ecc455f2ce05"
+dependencies = [
+    "bytemuck",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
- "winapi-util",
+    "winapi-util",
 ]
 
 [[package]]
@@ -2210,11 +2218,11 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17bfe642b1728a6e89137ad428ef5d4738eca4efaba9590f9e110b8944028621"
 dependencies = [
- "approx",
- "libm",
- "num-complex",
- "num-traits",
- "paste",
+    "approx",
+    "num-complex",
+    "num-traits",
+    "paste",
+    "wide",
 ]
 
 [[package]]
@@ -2787,7 +2795,17 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e3529528e608b54838ee618c3923b0f46e6db0334cfc6c42a16cf4ceb3bdb57"
 dependencies = [
- "bitflags",
+    "bitflags",
+]
+
+[[package]]
+name = "wide"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c51f160ef6333906fad7d31a2010d449148dd1a26bc377e0a1ace2cc9e1e1ee"
+dependencies = [
+    "bytemuck",
+    "safe_arch",
 ]
 
 [[package]]

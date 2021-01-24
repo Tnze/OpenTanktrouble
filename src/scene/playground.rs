@@ -18,6 +18,8 @@ use wgpu::util::DeviceExt;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
 
+const PHYSICAL_DT: f32 = 1.0 / 60.0;
+
 pub(crate) trait Scene {
     fn render(
         &mut self,
@@ -79,6 +81,7 @@ struct TankInstance {
     position: [f32; 2],
     velocity: [f32; 2],
     rotation: f32,
+    rotation_v: f32,
 }
 
 #[repr(C)]
@@ -205,7 +208,7 @@ impl GameScene {
                         wgpu::VertexBufferDescriptor {
                             stride: std::mem::size_of::<TankInstance>() as wgpu::BufferAddress,
                             step_mode: wgpu::InputStepMode::Instance,
-                            attributes: &wgpu::vertex_attr_array![1 => Float2, 2 => Float2, 3 => Float],
+                            attributes: &wgpu::vertex_attr_array![1 => Float2, 2 => Float2, 3 => Float, 4 => Float],
                         }
                     ],
                 },
@@ -258,6 +261,7 @@ impl GameScene {
             collider_set: ColliderSet::new(),
             joint_set: JointSet::new(),
         };
+        physical.integration_parameters.set_dt(PHYSICAL_DT);
         let ticker = tick(Duration::from_secs_f32(
             physical.integration_parameters.dt(),
         ));
@@ -276,6 +280,7 @@ impl GameScene {
                             position: position.translation.vector.into(),
                             velocity: [velocity.x, velocity.y],
                             rotation: position.rotation.angle(),
+                            rotation_v: rigid_body.angvel(),
                         }
                     })
                     .collect::<Vec<TankInstance>>(),
@@ -338,7 +343,7 @@ impl Scene for GameScene {
         // Update uniform
         self.uniforms.view_proj =
             projection(&[frame_size.0 as f32, frame_size.1 as f32], 0.4).into();
-        self.uniforms.forecast = self.last_update.elapsed().as_secs_f32() * 1.0 / 60_f32;
+        self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.9).min(PHYSICAL_DT); // do not forecast greater then physic engine
         queue.write_buffer(
             &self.uniform_buffer,
             0,
