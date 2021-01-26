@@ -286,26 +286,28 @@ impl GameScene {
                     .collect::<Vec<TankInstance>>(),
             );
 
-            // Wait for next tick, and do other things.
+            // Wait for next tick, and do other things on idle time.
+            // I didn't use 'select!' marco here because we need
+            // delete update_sender after send once.
             let mut selector = Select::new();
-            let ticker_index = selector.recv(&ticker);
-            let update_sender_index = selector.send(&update_sender);
-            let ctrl_receive_index = selector.recv(&ctrl_receiver);
+            let i_ticker = selector.recv(&ticker);
+            let i_update_sender = selector.send(&update_sender);
+            let i_controller_receiver = selector.recv(&ctrl_receiver);
 
             loop {
                 let oper = selector.select();
                 match oper.index() {
-                    i if i == ticker_index => {
+                    i if i == i_ticker => {
                         oper.recv(&ticker)?;
                         continue 'next_update;
                     }
-                    i if i == update_sender_index => {
+                    i if i == i_update_sender => {
+                        // This unwrap() never panic because this channel
+                        // is delete from selector next line.
                         oper.send(&update_sender, update_data.take().unwrap())?;
-                        // Remove this selector because we only need
-                        // send the data once after each update tick
-                        selector.remove(update_sender_index);
+                        selector.remove(i_update_sender);
                     }
-                    i if i == ctrl_receive_index => {
+                    i if i == i_controller_receiver => {
                         physical.add_player(oper.recv(&ctrl_receiver)?);
                     }
                     _ => unreachable!(),

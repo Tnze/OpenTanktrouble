@@ -1053,14 +1053,14 @@ version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41486a26d1366a8032b160b59065a59fb528530a46a49f627e7048fb8c064039"
 dependencies = [
- "anyhow",
- "heck",
- "itertools",
- "proc-macro-crate",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
+    "anyhow",
+    "heck",
+    "itertools 0.9.0",
+    "proc-macro-crate",
+    "proc-macro-error",
+    "proc-macro2",
+    "quote",
+    "syn",
 ]
 
 [[package]]
@@ -1223,7 +1223,16 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "284f18f85651fe11e8a991b2adb42cb078325c996ed026d994719efcfca1d54b"
 dependencies = [
- "either",
+    "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37d572918e350e82412fe766d24b15e6682fb2ed2bbe018280caa810397cb319"
+dependencies = [
+    "either",
 ]
 
 [[package]]
@@ -1697,23 +1706,24 @@ checksum = "13bd41f508810a131401606d54ac32a467c97172d74ba7662562ebba5ad07fa0"
 name = "open_tanktrouble"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "bytemuck",
- "cgmath",
- "crossbeam-channel",
- "env_logger",
- "fs_extra",
- "futures",
- "gilrs",
- "glob",
- "log",
- "msgbox",
- "rand 0.8.2",
- "rapier2d",
- "rayon",
- "shaderc",
- "wgpu",
- "winit",
+    "anyhow",
+    "bytemuck",
+    "cgmath",
+    "crossbeam-channel",
+    "env_logger",
+    "fs_extra",
+    "futures",
+    "gilrs",
+    "glob",
+    "itertools 0.10.0",
+    "log",
+    "msgbox",
+    "rand 0.8.2",
+    "rapier2d",
+    "rayon",
+    "shaderc",
+    "wgpu",
+    "winit",
 ]
 
 [[package]]
@@ -1989,8 +1999,8 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7fcbcb6854db4daf4b40e918151bef54839bad4ae83f3254ea158e520a7515e"
 dependencies = [
- "approx",
- "arrayvec",
+    "approx",
+    "arrayvec",
     "bit-vec",
     "bitflags",
     "crossbeam",
@@ -2102,7 +2112,7 @@ version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2aa654bc32eb9ca14cce1a084abc9dfe43949a4547c35269a094c39272db3bb"
 dependencies = [
- "lazy_static",
+    "lazy_static",
     "log",
     "winapi 0.3.9",
 ]
