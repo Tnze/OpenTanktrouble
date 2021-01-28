@@ -1,7 +1,6 @@
-use futures::TryFutureExt;
 use itertools::Itertools;
 use rand::distributions::{Distribution, Uniform};
-use rapier2d::{math::Point, na::Point3};
+use rapier2d::na::Point3;
 
 use super::playground::Vertex;
 
@@ -58,10 +57,12 @@ impl Maze {
         let mut vertices = Vec::with_capacity(4 * self.width * self.height);
         for y in 0..self.height {
             for x in 0..self.width {
-                vertices.push(Vertex::new(x as f32 - FRAC_1_16, y as f32 - FRAC_1_16));
-                vertices.push(Vertex::new(x as f32 + FRAC_1_16, y as f32 - FRAC_1_16));
-                vertices.push(Vertex::new(x as f32 - FRAC_1_16, y as f32 + FRAC_1_16));
-                vertices.push(Vertex::new(x as f32 + FRAC_1_16, y as f32 + FRAC_1_16));
+                let x = x as f32 + 0.5 - self.width as f32 / 2.0;
+                let y = y as f32 + 0.5 - self.height as f32 / 2.0;
+                vertices.push(Vertex::new(x - FRAC_1_16, y - FRAC_1_16));
+                vertices.push(Vertex::new(x + FRAC_1_16, y - FRAC_1_16));
+                vertices.push(Vertex::new(x - FRAC_1_16, y + FRAC_1_16));
+                vertices.push(Vertex::new(x + FRAC_1_16, y + FRAC_1_16));
             }
         }
         // Generate indices
@@ -73,10 +74,11 @@ impl Maze {
                 .unwrap()
         };
 
-        for y in 0..(self.height - 1) {
-            for x in 0..(self.width - 1) {
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let (p0, p1, p2, _) = get_offset(x, y);
                 if y == 0
+                    || y == self.height - 1
                     || self.temp_maze[y - 1][x] == WallStatus::Bottom
                     || self.temp_maze[y][x] == WallStatus::Top
                 {
@@ -85,6 +87,7 @@ impl Maze {
                     indices.push(p0, p2, n3);
                 }
                 if x == 0
+                    || x == self.width - 1
                     || self.temp_maze[y][x - 1] == WallStatus::Right
                     || self.temp_maze[y][x] == WallStatus::Left
                 {
@@ -94,7 +97,6 @@ impl Maze {
                 }
             }
         }
-        //TODO: Add the bottom and right wall
         vertices
     }
 }
@@ -109,6 +111,8 @@ enum WallStatus {
 
 #[cfg(test)]
 mod tests {
+    use rapier2d::na::Point3;
+
     use super::Maze;
 
     #[test]
@@ -123,7 +127,7 @@ mod tests {
         // testing if it panic;
         let mut rng = rand::thread_rng();
         let maze = Maze::new(&mut rng);
-        let mut list = Vec::new();
+        let mut list: Vec<Point3<u32>> = Vec::new();
         maze.triangle_mesh(&mut list);
     }
 }

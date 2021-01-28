@@ -160,17 +160,8 @@ impl GameScene {
 
         let maze = Maze::new(&mut rand::thread_rng());
         let mut maze_mesh_index = Vec::<u32>::new();
-        let mut maze_mesh_vertices = maze.triangle_mesh(&mut maze_mesh_index);
+        let maze_mesh_vertices = maze.triangle_mesh(&mut maze_mesh_index);
         dbg!(maze.width, maze.height, maze_mesh_vertices.len(), maze_mesh_index.len());
-        dbg!(&maze_mesh_index);
-        dbg!(&maze_mesh_vertices);
-
-        // let mut maze_mesh_index =vec![0, 5, 7];
-        // let mut maze_mesh_vertices = vec![
-        //     Vertex::new(-0.0625, -0.0625),
-        //     Vertex::new(0.0625, -0.0625),
-        //     Vertex::new(-0.0625, 0.0625),
-        // ];
 
         let maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Maze Vertex Buffer"),
@@ -519,8 +510,8 @@ impl PhysicalStatus {
             };
             let right_body = &mut self.rigid_body_set[tank.rigid_body_handle];
             let rotation = &Rotation2::from(right_body.position().rotation);
-            right_body.apply_force(rotation * Vector2::new(0.0, acl * 20.0), true);
-            right_body.apply_torque(-rot * 30.0, true);
+            right_body.apply_force(rotation * Vector2::new(0.0, acl * 30.0), true);
+            right_body.apply_torque(-rot * 40.0, true);
         }
 
         self.pipeline.step(
