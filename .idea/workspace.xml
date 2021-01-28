@@ -12,11 +12,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Can draw the maze">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Fix warnings, fix tests">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/maze.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/maze.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/maze.frag.spv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,6 +80,7 @@
     <property name="node.js.selected.package.tslint" value="(autodetect)" />
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
+    <property name="restartRequiresConfirmation" value="false" />
     <property name="settings.editor.selected.configurable" value="language.rust.rustfmt" />
   </component>
   <component name="RecentsManager">
@@ -134,7 +137,7 @@
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
       <envs>
-        <env name="RUST_LOG" value="info" />
+        <env name="RUST_LOG" value="debug" />
       </envs>
       <option name="isRedirectInput" value="false" />
       <option name="redirectInputPath" value="" />
@@ -304,7 +307,7 @@
       <workItem from="1611495954852" duration="3025000" />
       <workItem from="1611551909876" duration="19120000" />
       <workItem from="1611808055058" duration="8630000" />
-      <workItem from="1611819121768" duration="12730000" />
+      <workItem from="1611819121768" duration="20394000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -481,7 +484,14 @@
       <option name="project" value="LOCAL" />
       <updated>1611826961751</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="Fix warnings, fix tests">
+      <created>1611832915048</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1611832915048</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -512,7 +522,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Basic Vulkan demo" />
     <MESSAGE value="Fix triangle fans not support error on MacOS" />
     <MESSAGE value="Make the RECT roll" />
     <MESSAGE value="Setup keyboard event handler" />
@@ -537,7 +546,8 @@
     <MESSAGE value="Rotation insertion to make rotation smoother" />
     <MESSAGE value="Update README, because WebGPU is used instant of Vulkan." />
     <MESSAGE value="Can draw the maze" />
-    <option name="LAST_COMMIT_MESSAGE" value="Can draw the maze" />
+    <MESSAGE value="Fix warnings, fix tests" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fix warnings, fix tests" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

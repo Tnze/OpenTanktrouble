@@ -129,9 +129,9 @@ impl GameScene {
         ];
 
         let clean_color = wgpu::Color {
-            r: 0.1,
-            g: 0.2,
-            b: 0.3,
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
             a: 1.0,
         };
 
@@ -161,7 +161,6 @@ impl GameScene {
         let maze = Maze::new(&mut rand::thread_rng());
         let mut maze_mesh_index = Vec::<u32>::new();
         let maze_mesh_vertices = maze.triangle_mesh(&mut maze_mesh_index);
-        dbg!(maze.width, maze.height, maze_mesh_vertices.len(), maze_mesh_index.len());
 
         let maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Maze Vertex Buffer"),
@@ -283,7 +282,7 @@ impl GameScene {
                     entry_point: "main",
                 }),
                 rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                    front_face: wgpu::FrontFace::Cw,
+                    front_face: wgpu::FrontFace::Ccw,
                     cull_mode: wgpu::CullMode::Back,
                     depth_bias: 0,
                     depth_bias_slope_scale: 0.0,

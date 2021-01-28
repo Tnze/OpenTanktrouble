@@ -1,4 +1,6 @@
 use itertools::Itertools;
+#[allow(unused_imports)]
+use log::{debug, error, info, log_enabled};
 use rand::distributions::{Distribution, Uniform};
 use rapier2d::na::Point3;
 
@@ -43,7 +45,7 @@ impl Maze {
             })
             .take(height)
             .collect();
-
+        debug!("Created maze: [{}, {}]", width, height);
         Maze {
             width,
             height,
@@ -55,8 +57,8 @@ impl Maze {
         const FRAC_1_16: f32 = 1.0 / 16.0;
         // Generate vertices, 4 vertices for each point.
         let mut vertices = Vec::with_capacity(4 * self.width * self.height);
-        for y in 0..self.height {
-            for x in 0..self.width {
+        for y in 0..=self.height {
+            for x in 0..=self.width {
                 let x = x as f32 + 0.5 - self.width as f32 / 2.0;
                 let y = y as f32 + 0.5 - self.height as f32 / 2.0;
                 vertices.push(Vertex::new(x - FRAC_1_16, y - FRAC_1_16));
@@ -67,33 +69,35 @@ impl Maze {
         }
         // Generate indices
         let get_offset = |x, y| {
-            (4 * (x + y * self.width)..)
+            (4 * (x + y * (self.width + 1))..)
                 .map(|v| v as u32)
                 .take(4)
                 .collect_tuple()
                 .unwrap()
         };
 
-        for y in 0..self.height {
-            for x in 0..self.width {
+        for y in 0..=self.height {
+            for x in 0..=self.width {
                 let (p0, p1, p2, _) = get_offset(x, y);
-                if y == 0
-                    || y == self.height - 1
+                if x < self.width
+                    && (y == 0
+                    || y == self.height
                     || self.temp_maze[y - 1][x] == WallStatus::Bottom
-                    || self.temp_maze[y][x] == WallStatus::Top
+                    || self.temp_maze[y][x] == WallStatus::Top)
                 {
                     let (_, n1, _, n3) = get_offset(x + 1, y);
-                    indices.push(p0, n3, n1);
-                    indices.push(p0, p2, n3);
+                    indices.push(p0, n1, n3);
+                    indices.push(p0, n3, p2);
                 }
-                if x == 0
-                    || x == self.width - 1
+                if y < self.height
+                    && (x == 0
+                    || x == self.width
                     || self.temp_maze[y][x - 1] == WallStatus::Right
-                    || self.temp_maze[y][x] == WallStatus::Left
+                    || self.temp_maze[y][x] == WallStatus::Left)
                 {
                     let (_, _, n2, n3) = get_offset(x, y + 1);
-                    indices.push(p0, n3, p1);
-                    indices.push(p0, n2, n3);
+                    indices.push(p0, p1, n3);
+                    indices.push(p0, n3, n2);
                 }
             }
         }
