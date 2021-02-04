@@ -12,7 +12,7 @@ use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
     math::Point,
-    na::{Matrix4, Point3, Rotation2, Vector2},
+    na::{Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
 use wgpu::util::DeviceExt;
@@ -92,6 +92,10 @@ impl Vertex {
 }
 
 impl TriangleIndexList<u32> for Vec<u32> {
+    fn new() -> Self {
+        Vec::new()
+    }
+
     fn push(&mut self, p0: u32, p1: u32, p2: u32) {
         self.push(p0);
         self.push(p1);
@@ -100,18 +104,38 @@ impl TriangleIndexList<u32> for Vec<u32> {
 }
 
 impl VertexList<f32> for Vec<Vertex> {
+    fn new() -> Self {
+        Vec::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Vec::with_capacity(capacity)
+    }
+
     fn push(&mut self, p0: f32, p1: f32) {
         self.push(Vertex::new(p0, p1));
     }
 }
 
 impl TriangleIndexList<u32> for Vec<[u32; 3]> {
+    fn new() -> Self {
+        Vec::new()
+    }
+
     fn push(&mut self, p0: u32, p1: u32, p2: u32) {
         self.push([p0, p1, p2]);
     }
 }
 
 impl VertexList<f32> for Vec<Point<f32>> {
+    fn new() -> Self {
+        Vec::new()
+    }
+
+    fn with_capacity(capacity: usize) -> Self {
+        Vec::with_capacity(capacity)
+    }
+
     fn push(&mut self, p0: f32, p1: f32) {
         self.push(Point::new(p0, p1));
     }
@@ -368,16 +392,6 @@ impl GameScene {
     ) -> Result<(), Box<dyn Error>> {
         info!("Update thread spawned");
 
-        let maze = Maze::new(&mut rand::thread_rng());
-        let mut maze_mesh_indexes = Vec::<u32>::new();
-        let mut maze_mesh_vertices = Vec::<Vertex>::new();
-        maze.triangle_mesh(&mut maze_mesh_vertices, &mut maze_mesh_indexes);
-        maze_update_sender.send((maze_mesh_vertices, maze_mesh_indexes));
-
-        let mut maze_mesh_vertices = Vec::<Point<f32>>::new();
-        let mut maze_mesh_indexes = Vec::<[u32; 3]>::new();
-        maze.triangle_mesh(&mut maze_mesh_vertices, &mut maze_mesh_indexes);
-
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
 
@@ -390,11 +404,14 @@ impl GameScene {
             collider_set: ColliderSet::new(),
             joint_set: JointSet::new(),
         };
-        physical.integration_parameters.set_dt(PHYSICAL_DT);
-        let ticker = tick(Duration::from_secs_f32(
-            physical.integration_parameters.dt(),
-        ));
+        physical.integration_parameters.dt = PHYSICAL_DT;
+        let ticker = tick(Duration::from_secs_f32(PHYSICAL_DT));
 
+        let maze = Maze::new(&mut rand::thread_rng());
+        let maze_mesh_data = maze.triangle_mesh();
+        maze_update_sender.send(maze_mesh_data);
+
+        let (maze_mesh_vertices, maze_mesh_indexes) = maze.triangle_mesh();
         physical.add_maze(maze_mesh_vertices, maze_mesh_indexes);
 
         'next_update: loop {
@@ -602,7 +619,7 @@ impl PhysicalStatus {
         let right_body = RigidBodyBuilder::new_static().build();
         let collider = ColliderBuilder::trimesh(vertices, indices).build();
         let rigid_body_handle = self.rigid_body_set.insert(right_body);
-        let collider_handle =
+        let _collider_handle =
             self.collider_set
                 .insert(collider, rigid_body_handle, &mut self.rigid_body_set);
     }
