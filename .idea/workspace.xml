@@ -12,13 +12,13 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Fix warnings, fix tests">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Correctly draw maze">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/maze.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/maze.frag" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/shaders/maze.frag.spv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -81,7 +81,7 @@
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
     <property name="restartRequiresConfirmation" value="false" />
-    <property name="settings.editor.selected.configurable" value="language.rust.rustfmt" />
+    <property name="settings.editor.selected.configurable" value="settings.nodejs" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -105,6 +105,7 @@
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -119,6 +120,7 @@
       <option name="command" value="clippy" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -133,6 +135,7 @@
       <option name="command" value="run --package open_tanktrouble --bin open_tanktrouble" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -149,6 +152,7 @@
       <option name="command" value="expand --bin open_tanktrouble --color=always --theme=GitHub --tests scene::playground" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -163,6 +167,7 @@
       <option name="command" value="run --release" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="STABLE" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -177,6 +182,7 @@
       <option name="command" value="test --package open_tanktrouble --bin open_tanktrouble scene::maze::tests" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -191,6 +197,7 @@
       <option name="command" value="test " />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -205,6 +212,7 @@
       <option name="command" value="fix" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -219,6 +227,7 @@
       <option name="command" value="fmt" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
       <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
       <option name="allFeatures" value="false" />
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
@@ -240,17 +249,17 @@
       <item itemvalue="Cargo.Debug" />
       <item itemvalue="Cargo.Release" />
       <item itemvalue="Cargo.Test" />
-      <item itemvalue="Cargo.fmt" />
       <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
-      <item itemvalue="Cargo.fix" />
       <item itemvalue="Cargo.Test maze::tests" />
+      <item itemvalue="Cargo.fix" />
+      <item itemvalue="Cargo.fmt" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.Test maze::tests" />
-        <item itemvalue="Cargo.fix" />
-        <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
         <item itemvalue="Cargo.fmt" />
+        <item itemvalue="Cargo.fix" />
+        <item itemvalue="Cargo.Test maze::tests" />
+        <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
       </list>
     </recent_temporary>
   </component>
@@ -307,7 +316,12 @@
       <workItem from="1611495954852" duration="3025000" />
       <workItem from="1611551909876" duration="19120000" />
       <workItem from="1611808055058" duration="8630000" />
-      <workItem from="1611819121768" duration="20394000" />
+      <workItem from="1611819121768" duration="20469000" />
+      <workItem from="1611889216814" duration="9670000" />
+      <workItem from="1611984356242" duration="1292000" />
+      <workItem from="1612354917062" duration="54000" />
+      <workItem from="1612354991465" duration="2057000" />
+      <workItem from="1612413343783" duration="3850000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -491,7 +505,14 @@
       <option name="project" value="LOCAL" />
       <updated>1611832915048</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="Correctly draw maze">
+      <created>1611855545948</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1611855545948</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -522,7 +543,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Fix triangle fans not support error on MacOS" />
     <MESSAGE value="Make the RECT roll" />
     <MESSAGE value="Setup keyboard event handler" />
     <MESSAGE value="Add README.md" />
@@ -547,7 +567,8 @@
     <MESSAGE value="Update README, because WebGPU is used instant of Vulkan." />
     <MESSAGE value="Can draw the maze" />
     <MESSAGE value="Fix warnings, fix tests" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix warnings, fix tests" />
+    <MESSAGE value="Correctly draw maze" />
+    <option name="LAST_COMMIT_MESSAGE" value="Correctly draw maze" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

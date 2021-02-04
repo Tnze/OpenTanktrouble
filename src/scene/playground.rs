@@ -11,13 +11,14 @@ use log::{debug, error, info, log_enabled};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
-    na::{Matrix4, Rotation2, Vector2},
+    math::Point,
+    na::{Matrix4, Point3, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
 use wgpu::util::DeviceExt;
 
 use crate::input::Controller::{self, Gamepad, Keyboard};
-use crate::scene::maze::{Maze, TripletPointList};
+use crate::scene::maze::{Maze, TriangleIndexList, VertexList};
 
 const PHYSICAL_DT: f32 = 1.0 / 60.0;
 
@@ -43,6 +44,7 @@ pub struct GameScene {
     tank_module_num: u32,
     tank_render_pipeline: wgpu::RenderPipeline,
 
+    maze_mesh_data: (Vec<Vertex>, Vec<u32>),
     maze_mesh_buffer: wgpu::Buffer,
     maze_mesh_index_buffer: wgpu::Buffer,
     maze_mesh_index_num: u32,
@@ -51,8 +53,10 @@ pub struct GameScene {
     instances_data: Vec<TankInstance>,
     instances_buffer: wgpu::Buffer,
 
-    update_chan: Receiver<Vec<TankInstance>>,
+    tank_update_chan: Receiver<Vec<TankInstance>>,
+    maze_update_chan: Receiver<(Vec<Vertex>, Vec<u32>)>,
     add_controller_chan: Sender<Controller>,
+
     last_update: Instant,
 }
 
@@ -87,11 +91,29 @@ impl Vertex {
     }
 }
 
-impl TripletPointList<u32> for Vec<u32> {
+impl TriangleIndexList<u32> for Vec<u32> {
     fn push(&mut self, p0: u32, p1: u32, p2: u32) {
         self.push(p0);
         self.push(p1);
         self.push(p2);
+    }
+}
+
+impl VertexList<f32> for Vec<Vertex> {
+    fn push(&mut self, p0: f32, p1: f32) {
+        self.push(Vertex::new(p0, p1));
+    }
+}
+
+impl TriangleIndexList<u32> for Vec<[u32; 3]> {
+    fn push(&mut self, p0: u32, p1: u32, p2: u32) {
+        self.push([p0, p1, p2]);
+    }
+}
+
+impl VertexList<f32> for Vec<Point<f32>> {
+    fn push(&mut self, p0: f32, p1: f32) {
+        self.push(Point::new(p0, p1));
     }
 }
 
@@ -103,8 +125,6 @@ struct TankInstance {
     rotation: f32,
     rotation_v: f32,
 }
-
-// struct MazeMeshIndex Vec<u32>
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -158,21 +178,18 @@ impl GameScene {
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
-        let maze = Maze::new(&mut rand::thread_rng());
-        let mut maze_mesh_index = Vec::<u32>::new();
-        let maze_mesh_vertices = maze.triangle_mesh(&mut maze_mesh_index);
-
+        let maze_mesh_vertexes = Vec::new();
+        let maze_mesh_indexes = Vec::new();
         let maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Maze Vertex Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_vertices),
+            contents: bytemuck::cast_slice(&maze_mesh_vertexes),
             usage: wgpu::BufferUsage::VERTEX,
         });
         let maze_mesh_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Maze Index Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_index),
+            contents: bytemuck::cast_slice(&maze_mesh_indexes),
             usage: wgpu::BufferUsage::INDEX,
         });
-
 
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -299,13 +316,11 @@ impl GameScene {
                 depth_stencil_state: None,
                 vertex_state: wgpu::VertexStateDescriptor {
                     index_format: wgpu::IndexFormat::Uint32,
-                    vertex_buffers: &[
-                        wgpu::VertexBufferDescriptor {
-                            stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                            step_mode: wgpu::InputStepMode::Vertex,
-                            attributes: &wgpu::vertex_attr_array![0 => Float2],
-                        },
-                    ],
+                    vertex_buffers: &[wgpu::VertexBufferDescriptor {
+                        stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                        step_mode: wgpu::InputStepMode::Vertex,
+                        attributes: &wgpu::vertex_attr_array![0 => Float2],
+                    }],
                 },
                 sample_count: 1,
                 sample_mask: !0,
@@ -315,11 +330,12 @@ impl GameScene {
 
         // Init controller channel
         let (add_controller_chan, recv_controller_chan) = unbounded();
-
         // Start physic emulation
-        let (update_sender, update_chan) = bounded(0);
+        let (tank_update_sender, tank_update_chan) = bounded(0);
+        let (maze_update_sender, maze_update_chan) = bounded(0);
+
         thread::spawn(move || {
-            Self::manage(update_sender, recv_controller_chan)
+            Self::manage(tank_update_sender, maze_update_sender, recv_controller_chan)
                 .unwrap_or_else(|err| error!("{}", err));
         });
 
@@ -329,25 +345,39 @@ impl GameScene {
             uniform_buffer,
             uniform_bind_group,
             tank_module_buffer,
-            tank_module_num: TANK_VERTICES.len() as u32,
+            tank_module_num: TANK_VERTICES.len() as _,
             tank_render_pipeline,
+            maze_mesh_data: (maze_mesh_vertexes, maze_mesh_indexes),
             maze_mesh_buffer,
             maze_mesh_index_buffer,
-            maze_mesh_index_num: maze_mesh_index.len() as u32,
+            maze_mesh_index_num: 0,
             maze_render_pipeline,
             instances_data,
             instances_buffer,
-            update_chan,
+            tank_update_chan,
+            maze_update_chan,
             add_controller_chan,
             last_update: Instant::now(),
         }
     }
 
     fn manage(
-        update_sender: Sender<Vec<TankInstance>>,
+        tank_update_sender: Sender<Vec<TankInstance>>,
+        maze_update_sender: Sender<(Vec<Vertex>, Vec<u32>)>,
         ctrl_receiver: Receiver<Controller>,
     ) -> Result<(), Box<dyn Error>> {
         info!("Update thread spawned");
+
+        let maze = Maze::new(&mut rand::thread_rng());
+        let mut maze_mesh_indexes = Vec::<u32>::new();
+        let mut maze_mesh_vertices = Vec::<Vertex>::new();
+        maze.triangle_mesh(&mut maze_mesh_vertices, &mut maze_mesh_indexes);
+        maze_update_sender.send((maze_mesh_vertices, maze_mesh_indexes));
+
+        let mut maze_mesh_vertices = Vec::<Point<f32>>::new();
+        let mut maze_mesh_indexes = Vec::<[u32; 3]>::new();
+        maze.triangle_mesh(&mut maze_mesh_vertices, &mut maze_mesh_indexes);
+
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
 
@@ -364,6 +394,9 @@ impl GameScene {
         let ticker = tick(Duration::from_secs_f32(
             physical.integration_parameters.dt(),
         ));
+
+        physical.add_maze(maze_mesh_vertices, maze_mesh_indexes);
+
         'next_update: loop {
             physical.update_tick();
             let mut update_data = Some(
@@ -390,7 +423,7 @@ impl GameScene {
             // delete update_sender after send once.
             let mut selector = Select::new();
             let i_ticker = selector.recv(&ticker);
-            let i_update_sender = selector.send(&update_sender);
+            let i_update_sender = selector.send(&tank_update_sender);
             let i_controller_receiver = selector.recv(&ctrl_receiver);
 
             loop {
@@ -403,7 +436,7 @@ impl GameScene {
                     i if i == i_update_sender => {
                         // This unwrap() never panic because this channel
                         // is delete from selector next line.
-                        oper.send(&update_sender, update_data.take().unwrap())?;
+                        oper.send(&tank_update_sender, update_data.take().unwrap())?;
                         selector.remove(i_update_sender);
                     }
                     i if i == i_controller_receiver => {
@@ -425,7 +458,7 @@ impl Scene for GameScene {
         frame_size: (u32, u32),
     ) -> Result<(), wgpu::SwapChainError> {
         // Update data from physical thread
-        if let Ok(instances) = self.update_chan.try_recv() {
+        if let Ok(instances) = self.tank_update_chan.try_recv() {
             self.last_update = Instant::now();
             if self.instances_data.len() < instances.len() {
                 // Recreate buffer
@@ -441,10 +474,25 @@ impl Scene for GameScene {
             }
             self.instances_data = instances;
         }
+        if let Ok((maze_mesh_vertexes, maze_mesh_indexes)) = self.maze_update_chan.try_recv() {
+            self.maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Maze Vertex Buffer"),
+                contents: bytemuck::cast_slice(&maze_mesh_vertexes),
+                usage: wgpu::BufferUsage::VERTEX,
+            });
+            self.maze_mesh_index_buffer =
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Maze Index Buffer"),
+                    contents: bytemuck::cast_slice(&maze_mesh_indexes),
+                    usage: wgpu::BufferUsage::INDEX,
+                });
+            self.maze_mesh_index_num = maze_mesh_indexes.len() as _;
+            self.maze_mesh_data = (maze_mesh_vertexes, maze_mesh_indexes);
+        }
         // Update uniform
         self.uniforms.view_proj =
             projection(&[frame_size.0 as f32, frame_size.1 as f32], 0.1).into();
-        self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.9).min(PHYSICAL_DT); // do not forecast greater then physic engine
+        self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.99).min(PHYSICAL_DT); // do not forecast greater then physic engine
         queue.write_buffer(
             &self.uniform_buffer,
             0,
@@ -532,9 +580,9 @@ impl PhysicalStatus {
     pub fn add_player(&mut self, controller: Controller) {
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
-            .mass(1.0, true)
+            .mass(1.0)
             .linear_damping(10.0)
-            .principal_angular_inertia(1.0, true)
+            .principal_angular_inertia(1.0)
             .angular_damping(10.0)
             .build();
         let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
@@ -548,6 +596,15 @@ impl PhysicalStatus {
             rigid_body_handle,
             collider_handle,
         });
+    }
+
+    pub fn add_maze(&mut self, vertices: Vec<Point<f32>>, indices: Vec<[u32; 3]>) {
+        let right_body = RigidBodyBuilder::new_static().build();
+        let collider = ColliderBuilder::trimesh(vertices, indices).build();
+        let rigid_body_handle = self.rigid_body_set.insert(right_body);
+        let collider_handle =
+            self.collider_set
+                .insert(collider, rigid_body_handle, &mut self.rigid_body_set);
     }
 }
 

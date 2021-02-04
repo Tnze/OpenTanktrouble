@@ -34,7 +34,7 @@ fn main() {
         .build(&event_loop)
         .unwrap_or_else(|e| abort(&e));
     info!("Successfully create window");
-    let mut state =
+    let mut window_state =
         block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e.as_ref()));
 
     // Init controller
@@ -72,7 +72,7 @@ fn main() {
                         state: ElementState::Pressed,
                         virtual_keycode: Some(VirtualKeyCode::Q),
                         ..
-                    } => state.add_controller(input::Controller::Keyboard(
+                    } => window_state.add_controller(input::Controller::Keyboard(
                         keyboard_controller.create_sub_controller([
                             LogicKey(VirtualKeyCode::E),
                             LogicKey(VirtualKeyCode::D),
@@ -84,18 +84,19 @@ fn main() {
                     _ => keyboard_controller.input_event(&input),
                 },
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::Resized(physical_size) => state.resize(Some(*physical_size)),
+                WindowEvent::Resized(physical_size) => window_state.resize(Some(*physical_size)),
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    state.resize(Some(**new_inner_size))
+                    window_state.resize(Some(**new_inner_size))
                 }
                 _ => {}
             },
             Event::RedrawRequested(_) => {
                 use wgpu::SwapChainError::{Lost, OutOfMemory};
-                match state.render() {
+
+                match window_state.render() {
                     Ok(_) => {}
                     // Recreate the swap_chain if lost
-                    Err(Lost) => state.resize(None),
+                    Err(Lost) => window_state.resize(None),
                     // The system is out of memory, we should probably quit
                     Err(OutOfMemory) => abort(&OutOfMemory),
                     // All other errors (Outdated, Timeout) should be resolved by the next frame

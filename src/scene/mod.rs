@@ -1,4 +1,4 @@
 // pub mod main_menu;
-pub mod playground;
 mod maze;
+pub mod playground;
 // pub(crate) mod user_interface;
