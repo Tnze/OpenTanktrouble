@@ -409,7 +409,7 @@ impl GameScene {
 
         let maze = Maze::new(&mut rand::thread_rng());
         let maze_mesh_data = maze.triangle_mesh();
-        maze_update_sender.send(maze_mesh_data);
+        maze_update_sender.send(maze_mesh_data)?;
 
         let (maze_mesh_vertices, maze_mesh_indexes) = maze.triangle_mesh();
         physical.add_maze(maze_mesh_vertices, maze_mesh_indexes);
