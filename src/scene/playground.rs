@@ -11,7 +11,7 @@ use log::{debug, error, info, log_enabled};
 use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
-    math::Point,
+    math::{Point, Rotation},
     na::{Matrix4, Rotation2, Vector2},
     pipeline::PhysicsPipeline,
 };
@@ -20,7 +20,7 @@ use wgpu::util::DeviceExt;
 use crate::input::Controller::{self, Gamepad, Keyboard};
 use crate::scene::maze::{Maze, TriangleIndexList, VertexList};
 
-const PHYSICAL_DT: f32 = 1.0 / 60.0;
+const PHYSICAL_DT: f32 = 1.0 / 90.0;
 
 pub(crate) trait Scene {
     fn render(
@@ -576,6 +576,10 @@ impl PhysicalStatus {
             let rotation = &Rotation2::from(right_body.position().rotation);
             right_body.apply_force(rotation * Vector2::new(0.0, acl * 30.0), true);
             right_body.apply_torque(-rot * 40.0, true);
+            right_body.set_linvel(
+                Rotation::new(right_body.angvel() * PHYSICAL_DT) * right_body.linvel(),
+                true,
+            );
         }
 
         self.pipeline.step(
@@ -597,9 +601,9 @@ impl PhysicalStatus {
     pub fn add_player(&mut self, controller: Controller) {
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
-            .mass(1.0)
+            .mass(0.9)
             .linear_damping(10.0)
-            .principal_angular_inertia(1.0)
+            .principal_angular_inertia(0.8)
             .angular_damping(10.0)
             .build();
         let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
