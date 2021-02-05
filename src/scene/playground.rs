@@ -221,8 +221,9 @@ impl GameScene {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::UniformBuffer {
-                        dynamic: false,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
                         min_binding_size: None,
                     },
                     count: None,
@@ -232,16 +233,16 @@ impl GameScene {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: wgpu::BindingResource::Buffer(uniform_buffer.slice(..)),
+                resource: uniform_buffer.as_entire_binding(),
             }],
             label: Some("uniform_bind_group"),
         });
 
         let tank_render_pipeline = {
             let vs_module =
-                device.create_shader_module(wgpu::include_spirv!("shaders/tank.vert.spv"));
+                device.create_shader_module(&wgpu::include_spirv!("shaders/tank.vert.spv"));
             let fs_module =
-                device.create_shader_module(wgpu::include_spirv!("shaders/tank.frag.spv"));
+                device.create_shader_module(&wgpu::include_spirv!("shaders/tank.frag.spv"));
 
             let render_pipeline_layout =
                 device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -253,56 +254,38 @@ impl GameScene {
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("Tank Render Pipeline"),
                 layout: Some(&render_pipeline_layout),
-                vertex_stage: wgpu::ProgrammableStageDescriptor {
+                vertex: wgpu::VertexState {
                     module: &vs_module,
                     entry_point: "main",
-                },
-                fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                    module: &fs_module,
-                    entry_point: "main",
-                }),
-                rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: wgpu::CullMode::Back,
-                    depth_bias: 0,
-                    depth_bias_slope_scale: 0.0,
-                    depth_bias_clamp: 0.0,
-                    clamp_depth: false,
-                }),
-                color_states: &[wgpu::ColorStateDescriptor {
-                    format: sc_desc.format,
-                    color_blend: wgpu::BlendDescriptor::REPLACE,
-                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
-                    write_mask: wgpu::ColorWrite::ALL,
-                }],
-                primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-                depth_stencil_state: None,
-                vertex_state: wgpu::VertexStateDescriptor {
-                    index_format: wgpu::IndexFormat::Uint32,
-                    vertex_buffers: &[
-                        wgpu::VertexBufferDescriptor {
-                            stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                    buffers: &[
+                        wgpu::VertexBufferLayout {
+                            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
                             step_mode: wgpu::InputStepMode::Vertex,
                             attributes: &wgpu::vertex_attr_array![0 => Float2],
                         },
-                        wgpu::VertexBufferDescriptor {
-                            stride: std::mem::size_of::<TankInstance>() as wgpu::BufferAddress,
+                        wgpu::VertexBufferLayout {
+                            array_stride: std::mem::size_of::<TankInstance>() as wgpu::BufferAddress,
                             step_mode: wgpu::InputStepMode::Instance,
                             attributes: &wgpu::vertex_attr_array![1 => Float2, 2 => Float2, 3 => Float, 4 => Float],
                         }
                     ],
                 },
-                sample_count: 1,
-                sample_mask: !0,
-                alpha_to_coverage_enabled: false,
+                fragment: Some(wgpu::FragmentState {
+                    module: &fs_module,
+                    entry_point: "main",
+                    targets: &[sc_desc.format.into()],
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
             })
         };
 
         let maze_render_pipeline = {
             let vs_module =
-                device.create_shader_module(wgpu::include_spirv!("shaders/maze.vert.spv"));
+                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.vert.spv"));
             let fs_module =
-                device.create_shader_module(wgpu::include_spirv!("shaders/maze.frag.spv"));
+                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.frag.spv"));
 
             let render_pipeline_layout =
                 device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -314,41 +297,23 @@ impl GameScene {
             device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some("Tank Render Pipeline"),
                 layout: Some(&render_pipeline_layout),
-                vertex_stage: wgpu::ProgrammableStageDescriptor {
+                vertex: wgpu::VertexState {
                     module: &vs_module,
                     entry_point: "main",
-                },
-                fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
-                    module: &fs_module,
-                    entry_point: "main",
-                }),
-                rasterization_state: Some(wgpu::RasterizationStateDescriptor {
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: wgpu::CullMode::Back,
-                    depth_bias: 0,
-                    depth_bias_slope_scale: 0.0,
-                    depth_bias_clamp: 0.0,
-                    clamp_depth: false,
-                }),
-                color_states: &[wgpu::ColorStateDescriptor {
-                    format: sc_desc.format,
-                    color_blend: wgpu::BlendDescriptor::REPLACE,
-                    alpha_blend: wgpu::BlendDescriptor::REPLACE,
-                    write_mask: wgpu::ColorWrite::ALL,
-                }],
-                primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-                depth_stencil_state: None,
-                vertex_state: wgpu::VertexStateDescriptor {
-                    index_format: wgpu::IndexFormat::Uint32,
-                    vertex_buffers: &[wgpu::VertexBufferDescriptor {
-                        stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                    buffers: &[wgpu::VertexBufferLayout {
+                        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
                         step_mode: wgpu::InputStepMode::Vertex,
                         attributes: &wgpu::vertex_attr_array![0 => Float2],
                     }],
                 },
-                sample_count: 1,
-                sample_mask: !0,
-                alpha_to_coverage_enabled: false,
+                fragment: Some(wgpu::FragmentState {
+                    module: &fs_module,
+                    entry_point: "main",
+                    targets: &[sc_desc.format.into()],
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
             })
         };
 
@@ -522,6 +487,7 @@ impl Scene for GameScene {
         encoder.push_debug_group("Draw scene");
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Draw maze and tanks"),
                 color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                     attachment: &frame.view,
                     resolve_target: None,
@@ -537,7 +503,8 @@ impl Scene for GameScene {
             render_pass.set_pipeline(&self.maze_render_pipeline);
             render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.maze_mesh_buffer.slice(..));
-            render_pass.set_index_buffer(self.maze_mesh_index_buffer.slice(..));
+            render_pass
+                .set_index_buffer(self.maze_mesh_index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..self.maze_mesh_index_num, 0, 0..1);
             render_pass.pop_debug_group();
 
