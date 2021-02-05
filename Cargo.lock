@@ -1174,13 +1174,13 @@ dependencies = [
     "gio-sys",
     "glib",
     "glib-sys",
- "gobject-sys",
- "gtk-sys",
- "libc",
- "once_cell",
- "pango",
- "pango-sys",
- "pkg-config",
+    "gobject-sys",
+    "gtk-sys",
+    "libc",
+    "once_cell",
+    "pango",
+    "pango-sys",
+    "pkg-config",
 ]
 
 [[package]]

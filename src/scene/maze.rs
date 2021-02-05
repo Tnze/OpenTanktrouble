@@ -40,10 +40,10 @@ impl Maze {
                         3 => WallStatus::Left,
                         _ => unreachable!(),
                     })
-                    .take(width)
+                    .take(width + 1)
                     .collect()
             })
-            .take(height)
+            .take(height + 1)
             .collect();
         debug!("Created maze: [{}, {}]", width, height);
         Maze {
@@ -60,7 +60,7 @@ impl Maze {
     {
         const FRAC_1_16: f32 = 1.0 / 16.0;
         // Generate vertices, 4 vertices for each point.
-        let mut vertices = V::with_capacity(4 * self.width * self.height);
+        let mut vertices = V::with_capacity(self.width * self.height * 4);
         for y in 0..=self.height {
             for x in 0..=self.width {
                 let x = x as f32 + 0.5 - self.width as f32 / 2.0;
@@ -88,7 +88,7 @@ impl Maze {
                 if x < self.width
                     && (y == 0
                     || y == self.height
-                    || self.temp_maze[y - 1][x] == WallStatus::Bottom
+                    || self.temp_maze[y][x + 1] == WallStatus::Bottom
                     || self.temp_maze[y][x] == WallStatus::Top)
                 {
                     let (_, n1, _, n3) = get_offset(x + 1, y);
@@ -98,7 +98,7 @@ impl Maze {
                 if y < self.height
                     && (x == 0
                     || x == self.width
-                    || self.temp_maze[y][x - 1] == WallStatus::Right
+                    || self.temp_maze[y + 1][x] == WallStatus::Right
                     || self.temp_maze[y][x] == WallStatus::Left)
                 {
                     let (_, _, n2, n3) = get_offset(x, y + 1);
@@ -119,4 +119,3 @@ enum WallStatus {
     Bottom,
     Left,
 }
-
