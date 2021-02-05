@@ -12,14 +12,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Preliminary adjustment of handle">
-      <change afterPath="$PROJECT_DIR$/src/scene/render_layer.rs" afterDir="false" />
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Update to wgpu-rs 0.7.0">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/window.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/window.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/render_layer.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/render_layer.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -101,7 +98,7 @@
       <command value="cargo fix" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.Clippy">
+  <component name="RunManager" selected="Cargo.Debug">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -319,7 +316,8 @@
       <workItem from="1612354991465" duration="2057000" />
       <workItem from="1612413343783" duration="3850000" />
       <workItem from="1612456249829" duration="1962000" />
-      <workItem from="1612498928894" duration="4514000" />
+      <workItem from="1612498928894" duration="7424000" />
+      <workItem from="1612506674120" duration="10194000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -517,7 +515,14 @@
       <option name="project" value="LOCAL" />
       <updated>1612456503191</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Update to wgpu-rs 0.7.0">
+      <created>1612503626249</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1612503626250</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -548,7 +553,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Add README.md" />
     <MESSAGE value="Render proc in Maze object" />
     <MESSAGE value="It's ready to compile" />
     <MESSAGE value="Fix some warnings" />
@@ -573,7 +577,8 @@
     <MESSAGE value="Correctly draw maze" />
     <MESSAGE value="Re-struct triangle_mesh function" />
     <MESSAGE value="Preliminary adjustment of handle" />
-    <option name="LAST_COMMIT_MESSAGE" value="Preliminary adjustment of handle" />
+    <MESSAGE value="Update to wgpu-rs 0.7.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update to wgpu-rs 0.7.0" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

@@ -853,11 +853,11 @@ dependencies = [
     "parking_lot",
     "range-alloc",
     "raw-window-handle",
- "smallvec",
- "spirv_cross",
- "thunderdome",
- "winapi 0.3.9",
- "wio",
+    "smallvec",
+    "spirv_cross",
+    "thunderdome",
+    "winapi 0.3.9",
+    "wio",
 ]
 
 [[package]]
@@ -1164,16 +1164,16 @@ dependencies = [
     "atk",
     "bitflags",
     "cairo-rs",
- "cairo-sys-rs",
- "cc",
- "gdk",
- "gdk-pixbuf",
- "gdk-pixbuf-sys",
- "gdk-sys",
- "gio",
- "gio-sys",
- "glib",
- "glib-sys",
+    "cairo-sys-rs",
+    "cc",
+    "gdk",
+    "gdk-pixbuf",
+    "gdk-pixbuf-sys",
+    "gdk-sys",
+    "gio",
+    "gio-sys",
+    "glib",
+    "glib-sys",
  "gobject-sys",
  "gtk-sys",
  "libc",
@@ -1189,8 +1189,8 @@ version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89acda6f084863307d948ba64a4b1ef674e8527dddab147ee4cdcc194c880457"
 dependencies = [
- "atk-sys",
- "cairo-sys-rs",
+    "atk-sys",
+    "cairo-sys-rs",
     "gdk-pixbuf-sys",
     "gdk-sys",
     "gio-sys",
@@ -2309,9 +2309,9 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17bfe642b1728a6e89137ad428ef5d4738eca4efaba9590f9e110b8944028621"
 dependencies = [
- "approx",
- "num-complex",
- "num-traits",
+    "approx",
+    "num-complex",
+    "num-traits",
     "paste",
     "wide",
 ]
