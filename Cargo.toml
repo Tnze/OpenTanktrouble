@@ -7,24 +7,43 @@ edition = "2018"
 readme = "README.md"
 repository = "https://github.com/Tnze/OpenTanktrouble"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 futures = "0.3"
 crossbeam-channel = "0.5"
 log = "0.4"
-env_logger = "0.8"
 itertools = "0.10"
 
-wgpu = "0.7"
 bytemuck = { version = "1.5.0", features = ["derive"] }
-winit = "0.24"
-msgbox = "0.6.0"
-
 gilrs = "0.8"
+
 rapier2d = { version = "0.5", features = ["simd-stable", "parallel"] }
 cgmath = "0.18"
 rand = "0.8"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wgpu = "0.7"
+winit = "0.24"
+
+env_logger = "0.8"
+msgbox = "0.6.0"
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgpu = { version = "0.7", features = ["webgl"] }
+winit = { version = "0.24", features = ["web-sys"] }
+
+console_log = "0.1.2"
+console_error_panic_hook = "0.1.6"
+wasm-bindgen = "0.2.69"
+web-sys = { version = "0.3.46", features = ["Document", "Navigator", "Node", "NodeList", "Gpu", "GpuAdapter", "GpuAddressMode", "GpuBindGroup", "GpuBindGroupEntry", "GpuBindGroupDescriptor", "GpuBindGroupLayout", "GpuBindGroupLayoutEntry", "GpuBindGroupLayoutDescriptor", "GpuBlendDescriptor", "GpuBlendFactor", "GpuBlendOperation", "GpuBindingType", "GpuBuffer", "GpuBufferBinding", "GpuBufferCopyView", "GpuBufferDescriptor", "GpuCanvasContext", "GpuColorDict", "GpuColorStateDescriptor", "GpuCommandBuffer", "GpuCommandBufferDescriptor", "GpuCommandEncoder", "GpuCommandEncoderDescriptor", "GpuCompareFunction", "GpuComputePassDescriptor", "GpuComputePassEncoder", "GpuComputePipeline", "GpuComputePipelineDescriptor", "GpuCullMode", "GpuDepthStencilStateDescriptor", "GpuDevice", "GpuDeviceDescriptor", "GpuExtent3dDict", "GpuFilterMode", "GpuFrontFace", "GpuIndexFormat", "GpuInputStepMode", "GpuLimits", "GpuLoadOp", "GpuMapMode", "GpuOrigin3dDict", "GpuPipelineLayout", "GpuPipelineLayoutDescriptor", "GpuPowerPreference", "GpuPrimitiveTopology", "GpuProgrammableStageDescriptor", "GpuQueue", "GpuRasterizationStateDescriptor", "GpuRenderBundle", "GpuRenderBundleDescriptor", "GpuRenderBundleEncoder", "GpuRenderBundleEncoderDescriptor", "GpuRenderPassColorAttachmentDescriptor", "GpuRenderPassDepthStencilAttachmentDescriptor", "GpuRenderPassDescriptor", "GpuRenderPassEncoder", "GpuRenderPipeline", "GpuRenderPipelineDescriptor", "GpuRequestAdapterOptions", "GpuSampler", "GpuSamplerDescriptor", "GpuShaderModule", "GpuShaderModuleDescriptor", "GpuStencilOperation", "GpuStencilStateFaceDescriptor", "GpuStoreOp", "GpuSwapChain", "GpuSwapChainDescriptor", "GpuTexture", "GpuTextureAspect", "GpuTextureComponentType", "GpuTextureCopyView", "GpuTextureDataLayout", "GpuTextureDescriptor", "GpuTextureDimension", "GpuTextureFormat", "GpuTextureViewDescriptor", "GpuTextureViewDimension", "GpuTextureView", "GpuVertexAttributeDescriptor", "GpuVertexBufferLayoutDescriptor", "GpuVertexFormat", "GpuVertexStateDescriptor", "GpuVertexAttributeDescriptor", "HtmlCanvasElement", "Window", ] }
+js-sys = "0.3.46"
+wasm-bindgen-futures = "0.4.19"
+getrandom = { version = "0.2", features = ["js"] }
+
+
 
 [build-dependencies]
 anyhow = "1.0"

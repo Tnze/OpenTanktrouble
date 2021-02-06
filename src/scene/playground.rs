@@ -183,19 +183,6 @@ impl GameScene {
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
         });
 
-        let maze_mesh_vertexes = Vec::<Vertex>::new();
-        let maze_mesh_indexes = Vec::<u32>::new();
-        let maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Maze Vertex Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_vertexes),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
-        let maze_mesh_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Maze Index Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_indexes),
-            usage: wgpu::BufferUsage::INDEX,
-        });
-
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("uniform_bind_group_layout"),
@@ -241,12 +228,12 @@ impl GameScene {
                         entry_point: "main",
                         buffers: &[
                             wgpu::VertexBufferLayout {
-                                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+                                array_stride: std::mem::size_of::<Vertex>() as _,
                                 step_mode: wgpu::InputStepMode::Vertex,
                                 attributes: &wgpu::vertex_attr_array![0 => Float2],
                             },
                             wgpu::VertexBufferLayout {
-                                array_stride: std::mem::size_of::<TankInstance>() as wgpu::BufferAddress,
+                                array_stride: std::mem::size_of::<TankInstance>() as _,
                                 step_mode: wgpu::InputStepMode::Instance,
                                 attributes: &wgpu::vertex_attr_array![1 => Float2, 2 => Float2, 3 => Float, 4 => Float],
                             }
@@ -272,53 +259,60 @@ impl GameScene {
                 instance: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("TankInstance Buffer"),
                     contents: bytemuck::cast_slice(&Vec::<TankInstance>::new()),
-                    usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+                    usage: (wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST),
                 }),
                 instance_num: 0,
             },
         };
-        let maze_render_pipeline = {
-            let vs_module =
-                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.vert.spv"));
-            let fs_module =
-                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.frag.spv"));
-
-            let render_pipeline_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Tank Render Pipeline Layout"),
-                    bind_group_layouts: &[&uniform_bind_group_layout],
-                    push_constant_ranges: &[],
-                });
-
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Tank Render Pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &vs_module,
-                    entry_point: "main",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                        step_mode: wgpu::InputStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![0 => Float2],
-                    }],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &fs_module,
-                    entry_point: "main",
-                    targets: &[sc_desc.format.into()],
-                }),
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-            })
-        };
 
         let maze_layer = BasicLayer {
-            pipeline: maze_render_pipeline,
+            pipeline: {
+                let vs_module =
+                    device.create_shader_module(&wgpu::include_spirv!("shaders/maze.vert.spv"));
+                let fs_module =
+                    device.create_shader_module(&wgpu::include_spirv!("shaders/maze.frag.spv"));
+
+                let render_pipeline_layout =
+                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                        label: Some("Tank Render Pipeline Layout"),
+                        bind_group_layouts: &[&uniform_bind_group_layout],
+                        push_constant_ranges: &[],
+                    });
+
+                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    label: Some("Tank Render Pipeline"),
+                    layout: Some(&render_pipeline_layout),
+                    vertex: wgpu::VertexState {
+                        module: &vs_module,
+                        entry_point: "main",
+                        buffers: &[wgpu::VertexBufferLayout {
+                            array_stride: std::mem::size_of::<Vertex>() as _,
+                            step_mode: wgpu::InputStepMode::Vertex,
+                            attributes: &wgpu::vertex_attr_array![0 => Float2],
+                        }],
+                    },
+                    fragment: Some(wgpu::FragmentState {
+                        module: &fs_module,
+                        entry_point: "main",
+                        targets: &[sc_desc.format.into()],
+                    }),
+                    primitive: wgpu::PrimitiveState::default(),
+                    depth_stencil: None,
+                    multisample: wgpu::MultisampleState::default(),
+                })
+            },
             buffer: VertexAndIndexes {
-                vertex: maze_mesh_buffer,
-                index: maze_mesh_index_buffer,
-                index_num: maze_mesh_indexes.len(),
+                vertex: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Maze Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&Vec::<Vertex>::new()),
+                    usage: wgpu::BufferUsage::VERTEX,
+                }),
+                index: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Maze Index Buffer"),
+                    contents: bytemuck::cast_slice(&Vec::<u32>::new()),
+                    usage: wgpu::BufferUsage::INDEX,
+                }),
+                index_num: 0,
             },
         };
 
@@ -458,11 +452,12 @@ impl Scene for GameScene {
             }
         }
         if let Ok((maze_mesh_vertexes, maze_mesh_indexes)) = self.maze_update_chan.try_recv() {
-            self.maze_layer.buffer.vertex = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Maze Vertex Buffer"),
-                contents: bytemuck::cast_slice(&maze_mesh_vertexes),
-                usage: wgpu::BufferUsage::VERTEX,
-            });
+            self.maze_layer.buffer.vertex =
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Maze Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&maze_mesh_vertexes),
+                    usage: wgpu::BufferUsage::VERTEX,
+                });
             self.maze_layer.buffer.index =
                 device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Maze Index Buffer"),
