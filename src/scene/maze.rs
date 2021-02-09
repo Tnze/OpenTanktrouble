@@ -63,8 +63,8 @@ impl Maze {
         let mut vertices = V::with_capacity(self.width * self.height * 4);
         for y in 0..=self.height {
             for x in 0..=self.width {
-                let x = x as f32 + 0.5 - self.width as f32 / 2.0;
-                let y = y as f32 + 0.5 - self.height as f32 / 2.0;
+                let x = x as f32 - self.width as f32 / 2.0;
+                let y = y as f32 - self.height as f32 / 2.0;
                 vertices.push(x - FRAC_1_16, y - FRAC_1_16);
                 vertices.push(x + FRAC_1_16, y - FRAC_1_16);
                 vertices.push(x - FRAC_1_16, y + FRAC_1_16);

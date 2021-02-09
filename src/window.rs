@@ -63,8 +63,8 @@ impl WindowState {
     pub fn resize(&mut self, new_size: Option<winit::dpi::PhysicalSize<u32>>) {
         let new_size = new_size.unwrap_or(self.size);
         self.size = new_size;
-        self.sc_desc.width = new_size.width;
-        self.sc_desc.height = new_size.height;
+        self.sc_desc.width = new_size.width.max(1);
+        self.sc_desc.height = new_size.height.max(1);
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 

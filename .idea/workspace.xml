@@ -12,10 +12,12 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Using render layer to split out the buffer and pipeline objects from struct GameScene">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Fix problem with maze generation: too empty somewhere">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/maze.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/window.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/window.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,6 +237,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.Clippy" />
@@ -317,6 +324,8 @@
       <workItem from="1612456249829" duration="1962000" />
       <workItem from="1612498928894" duration="7424000" />
       <workItem from="1612506674120" duration="11734000" />
+      <workItem from="1612678199781" duration="1849000" />
+      <workItem from="1612801371599" duration="10185000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>

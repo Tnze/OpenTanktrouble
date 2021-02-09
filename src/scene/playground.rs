@@ -12,7 +12,7 @@ use rapier2d::{
     dynamics::{IntegrationParameters, JointSet, RigidBodyBuilder, RigidBodyHandle, RigidBodySet},
     geometry::{BroadPhase, ColliderBuilder, ColliderHandle, ColliderSet, NarrowPhase},
     math::{Point, Rotation},
-    na::{Matrix4, Rotation2, Vector2},
+    na::{Matrix4, Rotation2, Vector2, Vector3},
     pipeline::PhysicsPipeline,
 };
 use wgpu::util::DeviceExt;
@@ -20,9 +20,8 @@ use wgpu::util::DeviceExt;
 use crate::input::Controller::{self, Gamepad, Keyboard};
 use crate::scene::{
     maze::{Maze, TriangleIndexList, VertexList},
-    render_layer::{BasicLayer, VertexAndIndexes, VertexAndInstances},
+    render_layer::{BasicLayer, Layer, VertexAndIndexes, VertexAndInstances},
 };
-use crate::scene::render_layer::Layer;
 
 const PHYSICAL_DT: f32 = 1.0 / 90.0;
 
@@ -47,11 +46,19 @@ pub struct GameScene {
     tank_layer: BasicLayer<VertexAndInstances>,
     maze_layer: BasicLayer<VertexAndIndexes>,
 
+    maze_size: (usize, usize),
+
     tank_update_chan: Receiver<Vec<TankInstance>>,
-    maze_update_chan: Receiver<(Vec<Vertex>, Vec<u32>)>,
+    maze_update_chan: Receiver<MazeData>,
     add_controller_chan: Sender<Controller>,
 
     last_update: Instant,
+}
+
+struct MazeData {
+    vertex: Vec<Vertex>,
+    index: Vec<u32>,
+    size: (usize, usize),
 }
 
 struct PhysicalStatus {
@@ -340,6 +347,7 @@ impl GameScene {
             uniform_bind_group,
             tank_layer,
             maze_layer,
+            maze_size: (1, 1),
             tank_update_chan,
             maze_update_chan,
             add_controller_chan,
@@ -349,14 +357,13 @@ impl GameScene {
 
     fn manage(
         tank_update_sender: Sender<Vec<TankInstance>>,
-        maze_update_sender: Sender<(Vec<Vertex>, Vec<u32>)>,
+        maze_update_sender: Sender<MazeData>,
         ctrl_receiver: Receiver<Controller>,
     ) -> Result<(), Box<dyn Error>> {
         info!("Update thread spawned");
 
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
-
             seq_number: 0,
             pipeline: PhysicsPipeline::new(),
             integration_parameters: IntegrationParameters::default(),
@@ -370,9 +377,16 @@ impl GameScene {
         let ticker = tick(Duration::from_secs_f32(PHYSICAL_DT));
 
         let maze = Maze::new(&mut rand::thread_rng());
-        let maze_mesh_data = maze.triangle_mesh();
-        maze_update_sender.send(maze_mesh_data)?;
 
+        // Generate mesh for render
+        let (maze_mesh_vertices, maze_mesh_indexes) = maze.triangle_mesh();
+        maze_update_sender.send(MazeData {
+            vertex: maze_mesh_vertices,
+            index: maze_mesh_indexes,
+            size: (maze.width, maze.height),
+        })?;
+
+        // Generate mesh for physic
         let (maze_mesh_vertices, maze_mesh_indexes) = maze.triangle_mesh();
         physical.add_maze(maze_mesh_vertices, maze_mesh_indexes);
 
@@ -457,12 +471,18 @@ impl Scene for GameScene {
                 );
             }
         }
-        if let Ok((maze_mesh_vertexes, maze_mesh_indexes)) = self.maze_update_chan.try_recv() {
-            self.maze_layer.buffer.vertex = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Maze Vertex Buffer"),
-                contents: bytemuck::cast_slice(&maze_mesh_vertexes),
-                usage: wgpu::BufferUsage::VERTEX,
-            });
+        if let Ok(MazeData {
+                      vertex: maze_mesh_vertexes,
+                      index: maze_mesh_indexes,
+                      size: maze_size,
+                  }) = self.maze_update_chan.try_recv()
+        {
+            self.maze_layer.buffer.vertex =
+                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Maze Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&maze_mesh_vertexes),
+                    usage: wgpu::BufferUsage::VERTEX,
+                });
             self.maze_layer.buffer.index =
                 device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Maze Index Buffer"),
@@ -470,10 +490,11 @@ impl Scene for GameScene {
                     usage: wgpu::BufferUsage::INDEX,
                 });
             self.maze_layer.buffer.index_num = maze_mesh_indexes.len();
+            self.maze_size = maze_size;
         }
         // Update uniform
         self.uniforms.view_proj =
-            projection(&[frame_size.0 as f32, frame_size.1 as f32], 0.1).into();
+            projection(&[frame_size.0 as f32, frame_size.1 as f32], self.maze_size).into();
         self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.99).min(PHYSICAL_DT); // do not forecast greater then physic engine
         queue.write_buffer(
             &self.uniform_buffer,
@@ -590,23 +611,22 @@ impl PhysicalStatus {
 }
 
 #[inline]
-fn projection(frame_size: &[f32; 2], scale: f32) -> Matrix4<f32> {
-    Matrix4::new(
-        scale,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        scale * frame_size[0] / frame_size[1],
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-    )
+fn projection(frame_size: &[f32; 2], maze_size: (usize, usize)) -> Matrix4<f32> {
+    const MOVIE_WIDTH: f32 = 692.0;
+    const MOVIE_HEIGHT: f32 = 480.0;
+    const HEIGHT_TO_BOTTOM: f32 = 80.0;
+    const MOVIE_PADDING: f32 = 10.0;
+
+    let maze_size = [maze_size.0 as f32 + 0.125, maze_size.1 as f32 + 0.125];
+    let basic_scale = ((MOVIE_WIDTH - MOVIE_PADDING) / maze_size[0])
+        .min((MOVIE_HEIGHT - MOVIE_PADDING - HEIGHT_TO_BOTTOM) / maze_size[1]);
+    let window_scale = 2.0 * (frame_size[0] / MOVIE_WIDTH).min(frame_size[1] / MOVIE_HEIGHT);
+    Matrix4::identity()
+        .append_scaling(basic_scale)
+        .append_translation(&Vector3::new(0.0, HEIGHT_TO_BOTTOM / 2.0, 0.0))
+        .append_nonuniform_scaling(&Vector3::new(
+            window_scale / frame_size[0],
+            window_scale / frame_size[1],
+            1.0,
+        ))
 }
