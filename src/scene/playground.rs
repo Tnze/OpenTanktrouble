@@ -51,6 +51,7 @@ pub struct GameScene {
     tank_update_chan: Receiver<Vec<TankInstance>>,
     maze_update_chan: Receiver<MazeData>,
     add_controller_chan: Sender<Box<dyn Controller>>,
+    stop_signal_chan: Sender<()>,
 
     last_update: Instant,
 }
@@ -284,11 +285,17 @@ impl GameScene {
         // Start physic emulation
         let (tank_update_sender, tank_update_chan) = bounded(0);
         let (maze_update_sender, maze_update_chan) = bounded(0);
+        let (stop_signal_chan, stop_signal_receiver) = bounded(0);
 
-        thread::spawn(move || {
-            Self::manage(tank_update_sender, maze_update_sender, recv_controller_chan)
+        let update_thread = Some(thread::spawn(move || {
+            Self::manage(
+                tank_update_sender,
+                maze_update_sender,
+                recv_controller_chan,
+                stop_signal_receiver,
+            )
                 .unwrap_or_else(|err| error!("{}", err));
-        });
+        }));
 
         GameScene {
             clean_color,
@@ -301,6 +308,7 @@ impl GameScene {
             tank_update_chan,
             maze_update_chan,
             add_controller_chan,
+            stop_signal_chan,
             last_update: Instant::now(),
         }
     }
@@ -309,8 +317,9 @@ impl GameScene {
         tank_update_sender: Sender<Vec<TankInstance>>,
         maze_update_sender: Sender<MazeData>,
         ctrl_receiver: Receiver<Box<dyn Controller>>,
+        stop_signal: Receiver<()>,
     ) -> Result<(), Box<dyn Error>> {
-        info!("Update thread spawned");
+        debug!("Update thread spawned");
 
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
@@ -368,10 +377,16 @@ impl GameScene {
             let i_ticker = selector.recv(&ticker);
             let i_update_sender = selector.send(&tank_update_sender);
             let i_controller_receiver = selector.recv(&ctrl_receiver);
+            let i_stop_receiver = selector.recv(&stop_signal);
 
             loop {
                 let oper = selector.select();
                 match oper.index() {
+                    i if i == i_stop_receiver => {
+                        oper.recv(&stop_signal)?;
+                        debug!("Update thread exit");
+                        return Ok(());
+                    }
                     i if i == i_ticker => {
                         oper.recv(&ticker)?;
                         continue 'next_update;
@@ -493,6 +508,13 @@ impl Scene for GameScene {
         self.add_controller_chan.send(ctrl).unwrap_or_else(|err| {
             error!("Add controller to scene error: {}", err);
         });
+    }
+}
+
+impl Drop for GameScene {
+    fn drop(&mut self) {
+        // This will block until update thread quit
+        self.stop_signal_chan.send(());
     }
 }
 
