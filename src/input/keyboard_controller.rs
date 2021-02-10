@@ -50,8 +50,8 @@ pub struct Controller {
     key_map: Arc<Mutex<HashMap<Key, ElementState>>>,
 }
 
-impl Controller {
-    pub(crate) fn movement_status(&self) -> (f32, f32) {
+impl super::Controller for Controller {
+    fn movement_status(&self) -> (f32, f32) {
         let key_map = &*self.key_map.lock().unwrap();
         let get_value = |key, pressed| match key_map.get(&self.movement_keys[key]) {
             Some(ElementState::Pressed) => pressed,

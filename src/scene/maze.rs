@@ -58,17 +58,17 @@ impl Maze {
             V: VertexList<f32>,
             I: TriangleIndexList<u32>,
     {
-        const FRAC_1_16: f32 = 1.0 / 16.0;
+        const LINE_THICKNESS: f32 = 1.0 / 16.0;
         // Generate vertices, 4 vertices for each point.
         let mut vertices = V::with_capacity(self.width * self.height * 4);
         for y in 0..=self.height {
             for x in 0..=self.width {
                 let x = x as f32 - self.width as f32 / 2.0;
                 let y = y as f32 - self.height as f32 / 2.0;
-                vertices.push(x - FRAC_1_16, y - FRAC_1_16);
-                vertices.push(x + FRAC_1_16, y - FRAC_1_16);
-                vertices.push(x - FRAC_1_16, y + FRAC_1_16);
-                vertices.push(x + FRAC_1_16, y + FRAC_1_16);
+                vertices.push(x - LINE_THICKNESS, y - LINE_THICKNESS);
+                vertices.push(x + LINE_THICKNESS, y - LINE_THICKNESS);
+                vertices.push(x - LINE_THICKNESS, y + LINE_THICKNESS);
+                vertices.push(x + LINE_THICKNESS, y + LINE_THICKNESS);
             }
         }
 
@@ -118,4 +118,62 @@ enum WallStatus {
     Right,
     Bottom,
     Left,
+}
+
+pub(crate) mod util {
+    use rapier2d::math::Point;
+
+    use crate::scene::playground::Vertex;
+
+    use super::{TriangleIndexList, VertexList};
+
+    impl TriangleIndexList<u32> for Vec<u32> {
+        fn new() -> Self {
+            Vec::new()
+        }
+
+        fn push(&mut self, p0: u32, p1: u32, p2: u32) {
+            self.push(p0);
+            self.push(p1);
+            self.push(p2);
+        }
+    }
+
+    impl VertexList<f32> for Vec<Vertex> {
+        fn new() -> Self {
+            Vec::new()
+        }
+
+        fn with_capacity(capacity: usize) -> Self {
+            Vec::with_capacity(capacity)
+        }
+
+        fn push(&mut self, p0: f32, p1: f32) {
+            self.push(Vertex::new(p0, p1));
+        }
+    }
+
+    impl TriangleIndexList<u32> for Vec<[u32; 3]> {
+        fn new() -> Self {
+            Vec::new()
+        }
+
+        fn push(&mut self, p0: u32, p1: u32, p2: u32) {
+            self.push([p0, p1, p2]);
+        }
+    }
+
+    impl VertexList<f32> for Vec<Point<f32>> {
+        fn new() -> Self {
+            Vec::new()
+        }
+
+        fn with_capacity(capacity: usize) -> Self {
+            Vec::with_capacity(capacity)
+        }
+
+        fn push(&mut self, p0: f32, p1: f32) {
+            self.push(Point::new(p0, p1));
+        }
+    }
 }

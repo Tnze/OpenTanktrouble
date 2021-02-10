@@ -72,7 +72,7 @@ fn main() {
                         state: ElementState::Pressed,
                         virtual_keycode: Some(VirtualKeyCode::Q),
                         ..
-                    } => window_state.add_controller(input::Controller::Keyboard(
+                    } => window_state.add_controller(Box::new(
                         keyboard_controller.create_sub_controller([
                             LogicKey(VirtualKeyCode::E),
                             LogicKey(VirtualKeyCode::D),

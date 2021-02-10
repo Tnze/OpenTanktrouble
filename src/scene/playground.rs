@@ -17,9 +17,9 @@ use rapier2d::{
 };
 use wgpu::util::DeviceExt;
 
-use crate::input::Controller::{self, Gamepad, Keyboard};
+use crate::input::Controller;
 use crate::scene::{
-    maze::{Maze, TriangleIndexList, VertexList},
+    maze::{Maze, util},
     render_layer::{BasicLayer, Layer, VertexAndIndexes, VertexAndInstances},
 };
 
@@ -31,9 +31,9 @@ pub(crate) trait Scene {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         frame: &wgpu::SwapChainTexture,
-        frame_size: (u32, u32),
+        frame_size: [u32; 2],
     ) -> Result<(), wgpu::SwapChainError>;
-    fn add_controller(&self, ctrl: Controller);
+    fn add_controller(&self, ctrl: Box<dyn Controller>);
 }
 
 pub struct GameScene {
@@ -46,11 +46,11 @@ pub struct GameScene {
     tank_layer: BasicLayer<VertexAndInstances>,
     maze_layer: BasicLayer<VertexAndIndexes>,
 
-    maze_size: (usize, usize),
+    maze_size: [usize; 2],
 
     tank_update_chan: Receiver<Vec<TankInstance>>,
     maze_update_chan: Receiver<MazeData>,
-    add_controller_chan: Sender<Controller>,
+    add_controller_chan: Sender<Box<dyn Controller>>,
 
     last_update: Instant,
 }
@@ -58,7 +58,7 @@ pub struct GameScene {
 struct MazeData {
     vertex: Vec<Vertex>,
     index: Vec<u32>,
-    size: (usize, usize),
+    size: [usize; 2],
 }
 
 struct PhysicalStatus {
@@ -75,7 +75,7 @@ struct PhysicalStatus {
 }
 
 struct PhysicTank {
-    controller: Controller,
+    controller: Box<dyn Controller>,
     rigid_body_handle: RigidBodyHandle,
     collider_handle: ColliderHandle,
 }
@@ -89,56 +89,6 @@ pub struct Vertex {
 impl Vertex {
     pub const fn new(x: f32, y: f32) -> Vertex {
         Vertex { position: [x, y] }
-    }
-}
-
-impl TriangleIndexList<u32> for Vec<u32> {
-    fn new() -> Self {
-        Vec::new()
-    }
-
-    fn push(&mut self, p0: u32, p1: u32, p2: u32) {
-        self.push(p0);
-        self.push(p1);
-        self.push(p2);
-    }
-}
-
-impl VertexList<f32> for Vec<Vertex> {
-    fn new() -> Self {
-        Vec::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        Vec::with_capacity(capacity)
-    }
-
-    fn push(&mut self, p0: f32, p1: f32) {
-        self.push(Vertex::new(p0, p1));
-    }
-}
-
-impl TriangleIndexList<u32> for Vec<[u32; 3]> {
-    fn new() -> Self {
-        Vec::new()
-    }
-
-    fn push(&mut self, p0: u32, p1: u32, p2: u32) {
-        self.push([p0, p1, p2]);
-    }
-}
-
-impl VertexList<f32> for Vec<Point<f32>> {
-    fn new() -> Self {
-        Vec::new()
-    }
-
-    fn with_capacity(capacity: usize) -> Self {
-        Vec::with_capacity(capacity)
-    }
-
-    fn push(&mut self, p0: f32, p1: f32) {
-        self.push(Point::new(p0, p1));
     }
 }
 
@@ -347,7 +297,7 @@ impl GameScene {
             uniform_bind_group,
             tank_layer,
             maze_layer,
-            maze_size: (1, 1),
+            maze_size: [1, 1],
             tank_update_chan,
             maze_update_chan,
             add_controller_chan,
@@ -358,7 +308,7 @@ impl GameScene {
     fn manage(
         tank_update_sender: Sender<Vec<TankInstance>>,
         maze_update_sender: Sender<MazeData>,
-        ctrl_receiver: Receiver<Controller>,
+        ctrl_receiver: Receiver<Box<dyn Controller>>,
     ) -> Result<(), Box<dyn Error>> {
         info!("Update thread spawned");
 
@@ -383,7 +333,7 @@ impl GameScene {
         maze_update_sender.send(MazeData {
             vertex: maze_mesh_vertices,
             index: maze_mesh_indexes,
-            size: (maze.width, maze.height),
+            size: [maze.width, maze.height],
         })?;
 
         // Generate mesh for physic
@@ -448,7 +398,7 @@ impl Scene for GameScene {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         frame: &wgpu::SwapChainTexture,
-        frame_size: (u32, u32),
+        frame_size: [u32; 2],
     ) -> Result<(), wgpu::SwapChainError> {
         // Update data from physical thread
         if let Ok(instances) = self.tank_update_chan.try_recv() {
@@ -493,8 +443,11 @@ impl Scene for GameScene {
             self.maze_size = maze_size;
         }
         // Update uniform
-        self.uniforms.view_proj =
-            projection(&[frame_size.0 as f32, frame_size.1 as f32], self.maze_size).into();
+        self.uniforms.view_proj = projection(
+            &[frame_size[0] as f32, frame_size[1] as f32],
+            &self.maze_size,
+        )
+            .into();
         self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.99).min(PHYSICAL_DT); // do not forecast greater then physic engine
         queue.write_buffer(
             &self.uniform_buffer,
@@ -536,7 +489,7 @@ impl Scene for GameScene {
         Ok(())
     }
 
-    fn add_controller(&self, ctrl: Controller) {
+    fn add_controller(&self, ctrl: Box<dyn Controller>) {
         self.add_controller_chan.send(ctrl).unwrap_or_else(|err| {
             error!("Add controller to scene error: {}", err);
         });
@@ -549,10 +502,7 @@ impl PhysicalStatus {
 
         // Apply the control to the tank.
         for tank in self.tanks.iter() {
-            let (rot, acl) = match &tank.controller {
-                Gamepad(c) => c.movement_status(),
-                Keyboard(c) => c.movement_status(),
-            };
+            let (rot, acl) = tank.controller.movement_status();
             let right_body = &mut self.rigid_body_set[tank.rigid_body_handle];
             let rotation = &Rotation2::from(right_body.position().rotation);
             right_body.apply_force(rotation * Vector2::new(0.0, acl * 30.0), true);
@@ -579,7 +529,7 @@ impl PhysicalStatus {
         self.seq_number += 1;
     }
 
-    pub fn add_player(&mut self, controller: Controller) {
+    pub fn add_player(&mut self, controller: Box<dyn Controller>) {
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
             .mass(0.9)
@@ -611,16 +561,17 @@ impl PhysicalStatus {
 }
 
 #[inline]
-fn projection(frame_size: &[f32; 2], maze_size: (usize, usize)) -> Matrix4<f32> {
+fn projection(frame_size: &[f32; 2], maze_size: &[usize; 2]) -> Matrix4<f32> {
     const MOVIE_WIDTH: f32 = 692.0;
     const MOVIE_HEIGHT: f32 = 480.0;
     const HEIGHT_TO_BOTTOM: f32 = 80.0;
     const MOVIE_PADDING: f32 = 10.0;
+    const VIEW_WIDTH: f32 = MOVIE_WIDTH - MOVIE_PADDING;
+    const VIEW_HEIGHT: f32 = MOVIE_HEIGHT - MOVIE_PADDING - HEIGHT_TO_BOTTOM;
 
-    let maze_size = [maze_size.0 as f32 + 0.125, maze_size.1 as f32 + 0.125];
-    let basic_scale = ((MOVIE_WIDTH - MOVIE_PADDING) / maze_size[0])
-        .min((MOVIE_HEIGHT - MOVIE_PADDING - HEIGHT_TO_BOTTOM) / maze_size[1]);
-    let window_scale = 2.0 * (frame_size[0] / MOVIE_WIDTH).min(frame_size[1] / MOVIE_HEIGHT);
+    let maze_size = [maze_size[0] as f32 + 0.125, maze_size[1] as f32 + 0.125];
+    let basic_scale = (VIEW_WIDTH / maze_size[0]).min(VIEW_HEIGHT / maze_size[1]);
+    let window_scale = (frame_size[0] / MOVIE_WIDTH).min(frame_size[1] / MOVIE_HEIGHT) * 2.0;
     Matrix4::identity()
         .append_scaling(basic_scale)
         .append_translation(&Vector3::new(0.0, HEIGHT_TO_BOTTOM / 2.0, 0.0))

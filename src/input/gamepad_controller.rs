@@ -72,8 +72,8 @@ impl Controller {
     }
 }
 
-impl Controller {
-    pub(crate) fn movement_status(&self) -> (f32, f32) {
+impl super::Controller for Controller {
+    fn movement_status(&self) -> (f32, f32) {
         *self.status.lock().unwrap()
     }
 }
