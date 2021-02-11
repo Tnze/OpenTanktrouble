@@ -26,7 +26,7 @@ impl ShaderData {
             "vert" => shaderc::ShaderKind::Vertex,
             "frag" => shaderc::ShaderKind::Fragment,
             "comp" => shaderc::ShaderKind::Compute,
-            _ => bail!("Unsupported shader: {}", src_path.display()),
+            _ => bail!("Unsupported shaders: {}", src_path.display()),
         };
 
         let src = read_to_string(src_path.clone())?;
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
         .into_iter()
         .collect::<Result<Vec<_>>>()?;
 
-    let mut compiler = shaderc::Compiler::new().context("Unable to create shader compiler")?;
+    let mut compiler = shaderc::Compiler::new().context("Unable to create shaders compiler")?;
 
     // This can't be parallelized. The [shaderc::Compiler] is not
     // thread safe. Also, it creates a lot of resources. You could

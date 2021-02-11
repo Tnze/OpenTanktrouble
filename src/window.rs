@@ -3,7 +3,7 @@ use std::error::Error;
 use winit::window::Window;
 
 use crate::input::Controller;
-use crate::scene::playground::{GameScene, Scene};
+use crate::scene::game_scene::{GameScene, Scene};
 
 pub struct WindowState {
     surface: wgpu::Surface,

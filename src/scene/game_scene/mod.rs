@@ -17,11 +17,17 @@ use rapier2d::{
 };
 use wgpu::util::DeviceExt;
 
+use tank_layer::{TankInstance, TankLayer};
+
 use crate::input::Controller;
 use crate::scene::{
     maze::{Maze, util},
     render_layer::{BasicLayer, Layer, VertexAndIndexes, VertexAndInstances},
 };
+use crate::scene::game_scene::maze_layer::MazeLayer;
+
+mod maze_layer;
+mod tank_layer;
 
 const PHYSICAL_DT: f32 = 1.0 / 90.0;
 
@@ -43,8 +49,8 @@ pub struct GameScene {
     uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 
-    tank_layer: BasicLayer<VertexAndInstances>,
-    maze_layer: BasicLayer<VertexAndIndexes>,
+    tank_layer: TankLayer,
+    maze_layer: MazeLayer,
 
     maze_size: [usize; 2],
 
@@ -56,7 +62,7 @@ pub struct GameScene {
     last_update: Instant,
 }
 
-struct MazeData {
+pub struct MazeData {
     vertex: Vec<Vertex>,
     index: Vec<u32>,
     size: [usize; 2],
@@ -94,15 +100,6 @@ impl Vertex {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct TankInstance {
-    position: [f32; 2],
-    velocity: [f32; 2],
-    rotation: f32,
-    rotation_v: f32,
-}
-
-#[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct Uniforms {
     view_proj: [[f32; 4]; 4],
@@ -112,18 +109,6 @@ struct Uniforms {
 impl GameScene {
     pub(crate) fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> GameScene {
         info!("Creating GameScene");
-        // Create render objects
-        const A: f32 = 0.2;
-        const B: f32 = 0.25;
-        const TANK_VERTICES: &[Vertex] = &[
-            Vertex::new(-A, -B),
-            Vertex::new(A, -B),
-            Vertex::new(A, B),
-            Vertex::new(-A, -B),
-            Vertex::new(A, B),
-            Vertex::new(-A, B),
-        ];
-
         let clean_color = wgpu::Color {
             r: 1.0,
             g: 1.0,
@@ -139,19 +124,6 @@ impl GameScene {
             label: Some("Tank Uniform Buffer"),
             contents: bytemuck::cast_slice(&[uniforms]),
             usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        });
-
-        let maze_mesh_vertexes = Vec::<Vertex>::new();
-        let maze_mesh_indexes = Vec::<u32>::new();
-        let maze_mesh_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Maze Vertex Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_vertexes),
-            usage: wgpu::BufferUsage::VERTEX,
-        });
-        let maze_mesh_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Maze Index Buffer"),
-            contents: bytemuck::cast_slice(&maze_mesh_indexes),
-            usage: wgpu::BufferUsage::INDEX,
         });
 
         let uniform_bind_group_layout =
@@ -177,108 +149,8 @@ impl GameScene {
             label: Some("uniform_bind_group"),
         });
 
-        let tank_layer = BasicLayer {
-            pipeline: {
-                let vs_module =
-                    device.create_shader_module(&wgpu::include_spirv!("shaders/tank.vert.spv"));
-                let fs_module =
-                    device.create_shader_module(&wgpu::include_spirv!("shaders/tank.frag.spv"));
-
-                let render_pipeline_layout =
-                    device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                        label: Some("Tank Render Pipeline Layout"),
-                        bind_group_layouts: &[&uniform_bind_group_layout],
-                        push_constant_ranges: &[],
-                    });
-
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("Tank Render Pipeline"),
-                    layout: Some(&render_pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module: &vs_module,
-                        entry_point: "main",
-                        buffers: &[
-                            wgpu::VertexBufferLayout {
-                                array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                                step_mode: wgpu::InputStepMode::Vertex,
-                                attributes: &wgpu::vertex_attr_array![0 => Float2],
-                            },
-                            wgpu::VertexBufferLayout {
-                                array_stride: std::mem::size_of::<TankInstance>() as wgpu::BufferAddress,
-                                step_mode: wgpu::InputStepMode::Instance,
-                                attributes: &wgpu::vertex_attr_array![1 => Float2, 2 => Float2, 3 => Float, 4 => Float],
-                            }
-                        ],
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &fs_module,
-                        entry_point: "main",
-                        targets: &[sc_desc.format.into()],
-                    }),
-                    primitive: wgpu::PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                })
-            },
-            buffer: VertexAndInstances {
-                vertex: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Tank Vertex Buffer"),
-                    contents: bytemuck::cast_slice(TANK_VERTICES),
-                    usage: wgpu::BufferUsage::VERTEX,
-                }),
-                vertex_num: TANK_VERTICES.len() as _,
-                instance: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("TankInstance Buffer"),
-                    contents: bytemuck::cast_slice(&Vec::<TankInstance>::new()),
-                    usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
-                }),
-                instance_num: 0,
-            },
-        };
-        let maze_render_pipeline = {
-            let vs_module =
-                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.vert.spv"));
-            let fs_module =
-                device.create_shader_module(&wgpu::include_spirv!("shaders/maze.frag.spv"));
-
-            let render_pipeline_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Tank Render Pipeline Layout"),
-                    bind_group_layouts: &[&uniform_bind_group_layout],
-                    push_constant_ranges: &[],
-                });
-
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Tank Render Pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &vs_module,
-                    entry_point: "main",
-                    buffers: &[wgpu::VertexBufferLayout {
-                        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-                        step_mode: wgpu::InputStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![0 => Float2],
-                    }],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &fs_module,
-                    entry_point: "main",
-                    targets: &[sc_desc.format.into()],
-                }),
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-            })
-        };
-
-        let maze_layer = BasicLayer {
-            pipeline: maze_render_pipeline,
-            buffer: VertexAndIndexes {
-                vertex: maze_mesh_buffer,
-                index: maze_mesh_index_buffer,
-                index_num: maze_mesh_indexes.len(),
-            },
-        };
+        let tank_layer = TankLayer::new(device, sc_desc.format.into(), &uniform_bind_group_layout);
+        let maze_layer = MazeLayer::new(device, sc_desc.format.into(), &uniform_bind_group_layout);
 
         // Init controller channel
         let (add_controller_chan, recv_controller_chan) = unbounded();
@@ -288,6 +160,7 @@ impl GameScene {
         let (stop_signal_chan, stop_signal_receiver) = bounded(0);
 
         let update_thread = Some(thread::spawn(move || {
+            debug!("Update thread spawned");
             Self::manage(
                 tank_update_sender,
                 maze_update_sender,
@@ -295,6 +168,7 @@ impl GameScene {
                 stop_signal_receiver,
             )
                 .unwrap_or_else(|err| error!("{}", err));
+            debug!("Update thread exit");
         }));
 
         GameScene {
@@ -319,8 +193,6 @@ impl GameScene {
         ctrl_receiver: Receiver<Box<dyn Controller>>,
         stop_signal: Receiver<()>,
     ) -> Result<(), Box<dyn Error>> {
-        debug!("Update thread spawned");
-
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
             seq_number: 0,
@@ -384,7 +256,6 @@ impl GameScene {
                 match oper.index() {
                     i if i == i_stop_receiver => {
                         oper.recv(&stop_signal)?;
-                        debug!("Update thread exit");
                         return Ok(());
                     }
                     i if i == i_ticker => {
@@ -418,52 +289,18 @@ impl Scene for GameScene {
         // Update data from physical thread
         if let Ok(instances) = self.tank_update_chan.try_recv() {
             self.last_update = Instant::now();
-            if self.tank_layer.buffer.instance_num < instances.len() {
-                // Recreate buffer
-                self.tank_layer.buffer.instance =
-                    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("Instance Buffer"),
-                        contents: bytemuck::cast_slice(&instances),
-                        usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
-                    });
-                self.tank_layer.buffer.instance_num = instances.len();
-            } else {
-                // Just send to the existing buffer
-                queue.write_buffer(
-                    &self.tank_layer.buffer.instance,
-                    0,
-                    bytemuck::cast_slice(&instances),
-                );
-            }
+            self.tank_layer.update_instances(device, queue, instances);
         }
-        if let Ok(MazeData {
-                      vertex: maze_mesh_vertexes,
-                      index: maze_mesh_indexes,
-                      size: maze_size,
-                  }) = self.maze_update_chan.try_recv()
-        {
-            self.maze_layer.buffer.vertex =
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Maze Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&maze_mesh_vertexes),
-                    usage: wgpu::BufferUsage::VERTEX,
-                });
-            self.maze_layer.buffer.index =
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Maze Index Buffer"),
-                    contents: bytemuck::cast_slice(&maze_mesh_indexes),
-                    usage: wgpu::BufferUsage::INDEX,
-                });
-            self.maze_layer.buffer.index_num = maze_mesh_indexes.len();
-            self.maze_size = maze_size;
+        if let Ok(maze_data) = self.maze_update_chan.try_recv() {
+            self.maze_size = maze_data.size;
+            self.maze_layer.update_maze(device, queue, maze_data);
         }
         // Update uniform
-        self.uniforms.view_proj = projection(
-            &[frame_size[0] as f32, frame_size[1] as f32],
-            &self.maze_size,
-        )
-            .into();
-        self.uniforms.forecast = (self.last_update.elapsed().as_secs_f32() * 0.99).min(PHYSICAL_DT); // do not forecast greater then physic engine
+        let frame_size = [frame_size[0] as f32, frame_size[1] as f32];
+        self.uniforms = Uniforms {
+            view_proj: projection(&frame_size, &self.maze_size).into(),
+            forecast: PHYSICAL_DT.min(self.last_update.elapsed().as_secs_f32() * 0.99), // do not forecast greater then physic engine
+        };
         queue.write_buffer(
             &self.uniform_buffer,
             0,
@@ -514,7 +351,7 @@ impl Scene for GameScene {
 impl Drop for GameScene {
     fn drop(&mut self) {
         // This will block until update thread quit
-        self.stop_signal_chan.send(());
+        self.stop_signal_chan.send(()).unwrap();
     }
 }
 

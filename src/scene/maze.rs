@@ -123,7 +123,7 @@ enum WallStatus {
 pub(crate) mod util {
     use rapier2d::math::Point;
 
-    use crate::scene::playground::Vertex;
+    use crate::scene::game_scene::Vertex;
 
     use super::{TriangleIndexList, VertexList};
 

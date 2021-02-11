@@ -12,12 +12,25 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Use trait object for controller manage.">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Gracefully quit update thread.">
+      <change afterPath="$PROJECT_DIR$/src/scene/game_scene/maze_layer.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/scene/game_scene/tank_layer.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.rs" beforeDir="false" afterPath="$PROJECT_DIR$/build.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/maze.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/maze.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/playground.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/scene/prepare_sence.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/prepare_scene.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/playground.rs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/maze.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.frag.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/maze.frag.spv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.vert" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/maze.vert" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/maze.vert.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/maze.vert.spv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.frag" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/tank.frag" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.frag.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/tank.frag.spv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.vert" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/tank.vert" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/scene/shaders/tank.vert.spv" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/shaders/tank.vert.spv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/window.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/window.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,6 +100,8 @@
       <recent name="C:\Users\Tnze\Documents\Projects\rust\OpenTanktrouble" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Tnze\Documents\Projects\rust\OpenTanktrouble\src\scene\game_scene\shaders" />
+      <recent name="C:\Users\Tnze\Documents\Projects\rust\OpenTanktrouble\src\scene\game_scene\shader" />
       <recent name="$PROJECT_DIR$/src/scene" />
       <recent name="$PROJECT_DIR$/src/input" />
     </key>
@@ -327,7 +342,10 @@
       <workItem from="1612678199781" duration="1849000" />
       <workItem from="1612801371599" duration="10592000" />
       <workItem from="1612851681955" duration="7494000" />
-      <workItem from="1612969814593" duration="5746000" />
+      <workItem from="1612969814593" duration="6058000" />
+      <workItem from="1613006789924" duration="15000" />
+      <workItem from="1613006829783" duration="221000" />
+      <workItem from="1613013792373" duration="6989000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -553,7 +571,14 @@
       <option name="project" value="LOCAL" />
       <updated>1612976855989</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Gracefully quit update thread.">
+      <created>1612979314329</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1612979314329</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -584,7 +609,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Adj code fmt" />
     <MESSAGE value="Update libraries version" />
     <MESSAGE value="Better way to resize mat3 to mat4" />
     <MESSAGE value="Press F11 to switch between fullscreen-mode and window-mode" />
@@ -609,7 +633,8 @@
     <MESSAGE value="Using render layer to split out the buffer and pipeline objects from struct GameScene" />
     <MESSAGE value="Implement auto scale close to original edition" />
     <MESSAGE value="Use trait object for controller manage." />
-    <option name="LAST_COMMIT_MESSAGE" value="Use trait object for controller manage." />
+    <MESSAGE value="Gracefully quit update thread." />
+    <option name="LAST_COMMIT_MESSAGE" value="Gracefully quit update thread." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
