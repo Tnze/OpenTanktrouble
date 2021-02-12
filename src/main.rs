@@ -1,6 +1,7 @@
 use std::{error::Error, process::exit};
 
 use futures::executor::block_on;
+use gilrs::Gilrs;
 #[allow(unused_imports)]
 use log::{debug, error, info};
 use winit::{
@@ -37,12 +38,8 @@ fn main() {
     let mut window_state =
         block_on(window::WindowState::new(&window)).unwrap_or_else(|e| abort(e.as_ref()));
 
-    // Init controller
-    let keyboard_controller = Keyboard::new();
-    let mut gamepad_controller = Gamepad::new();
-
     event_loop.run(move |event, _, control_flow| {
-        while let Some(_e) = gamepad_controller.next() {}
+        window_state.update();
         match event {
             Event::WindowEvent {
                 ref event,
@@ -68,27 +65,14 @@ fn main() {
                         info!("Fullscreen mode is changing to {:?}", fullscreen_mode);
                         window.set_fullscreen(fullscreen_mode);
                     }
-                    KeyboardInput {
-                        state: ElementState::Pressed,
-                        virtual_keycode: Some(VirtualKeyCode::Q),
-                        ..
-                    } => window_state.add_controller(Box::new(
-                        keyboard_controller.create_sub_controller([
-                            LogicKey(VirtualKeyCode::E),
-                            LogicKey(VirtualKeyCode::D),
-                            LogicKey(VirtualKeyCode::S),
-                            LogicKey(VirtualKeyCode::F),
-                        ]),
-                    )),
-                    // Other keyboard event
-                    _ => keyboard_controller.input_event(&input),
+                    _ => window_state.input_center.window_event(event),
                 },
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::Resized(physical_size) => window_state.resize(Some(*physical_size)),
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     window_state.resize(Some(**new_inner_size))
                 }
-                _ => {}
+                _ => window_state.input_center.window_event(event),
             },
             Event::RedrawRequested(_) => {
                 use wgpu::SwapChainError::{Lost, OutOfMemory};

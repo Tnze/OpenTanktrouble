@@ -1,6 +1,6 @@
 pub mod gamepad_controller;
-mod input_status;
 pub mod keyboard_controller;
+pub mod input_center;
 
 /// 控制器代表用于操控一辆坦克的对象，可以是一个手柄或者一个键盘，甚至一个A.I.。
 /// 一般拥有一个movement_status方法用于查询当前该控制器的输入状态

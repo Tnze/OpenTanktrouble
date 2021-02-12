@@ -30,41 +30,29 @@ pub struct VertexAndIndexes {
 
 impl<'a> Layer<'a> for BasicLayer<VertexOnly> {
     fn sub_render_pass<'b>(&'a self, render_pass: &'b mut RenderPass<'a>) {
-        render_pass.push_debug_group("Draw tanks");
-        {
-            render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
-            render_pass.draw(0..(self.buffer.vertex_num as _), 0..1);
-        }
-        render_pass.pop_debug_group();
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
+        render_pass.draw(0..(self.buffer.vertex_num as _), 0..1);
     }
 }
 
 impl<'a> Layer<'a> for BasicLayer<VertexAndIndexes> {
     fn sub_render_pass<'b>(&'a self, render_pass: &'b mut RenderPass<'a>) {
-        render_pass.push_debug_group("Draw tanks");
-        {
-            render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
-            render_pass.set_index_buffer(self.buffer.index.slice(..), wgpu::IndexFormat::Uint32);
-            render_pass.draw_indexed(0..(self.buffer.index_num as _), 0, 0..1);
-        }
-        render_pass.pop_debug_group();
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
+        render_pass.set_index_buffer(self.buffer.index.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.draw_indexed(0..(self.buffer.index_num as _), 0, 0..1);
     }
 }
 
 impl<'a> Layer<'a> for BasicLayer<VertexAndInstances> {
     fn sub_render_pass<'b>(&'a self, render_pass: &'b mut RenderPass<'a>) {
-        render_pass.push_debug_group("Draw tanks");
-        {
-            render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
-            render_pass.set_vertex_buffer(1, self.buffer.instance.slice(..));
-            render_pass.draw(
-                0..(self.buffer.vertex_num as _),
-                0..(self.buffer.instance_num as _),
-            );
-        }
-        render_pass.pop_debug_group();
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.set_vertex_buffer(0, self.buffer.vertex.slice(..));
+        render_pass.set_vertex_buffer(1, self.buffer.instance.slice(..));
+        render_pass.draw(
+            0..(self.buffer.vertex_num as _),
+            0..(self.buffer.instance_num as _),
+        );
     }
 }

@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    thread,
-    time::{Duration, Instant},
-};
+use std::{error::Error, time};
 
 use cgmath::SquareMatrix;
 use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
@@ -17,14 +13,13 @@ use rapier2d::{
 };
 use wgpu::util::DeviceExt;
 
+use maze_layer::{MazeData, MazeLayer};
 use tank_layer::{TankInstance, TankLayer};
 
 use crate::input::Controller;
-use crate::scene::{
-    maze::{Maze, util},
-    render_layer::{BasicLayer, Layer, VertexAndIndexes, VertexAndInstances},
-};
-use crate::scene::game_scene::maze_layer::MazeLayer;
+use crate::input::input_center::InputHandler;
+
+use super::{maze::Maze, render_layer::Layer};
 
 mod maze_layer;
 mod tank_layer;
@@ -59,13 +54,7 @@ pub struct GameScene {
     add_controller_chan: Sender<Box<dyn Controller>>,
     stop_signal_chan: Sender<()>,
 
-    last_update: Instant,
-}
-
-pub struct MazeData {
-    vertex: Vec<Vertex>,
-    index: Vec<u32>,
-    size: [usize; 2],
+    last_update: time::Instant,
 }
 
 struct PhysicalStatus {
@@ -107,7 +96,10 @@ struct Uniforms {
 }
 
 impl GameScene {
-    pub(crate) fn new(device: &wgpu::Device, sc_desc: &wgpu::SwapChainDescriptor) -> GameScene {
+    pub(crate) fn new(
+        device: &wgpu::Device,
+        sc_desc: &wgpu::SwapChainDescriptor,
+    ) -> (GameScene, impl FnOnce(InputHandler)) {
         info!("Creating GameScene");
         let clean_color = wgpu::Color {
             r: 1.0,
@@ -159,37 +151,42 @@ impl GameScene {
         let (maze_update_sender, maze_update_chan) = bounded(0);
         let (stop_signal_chan, stop_signal_receiver) = bounded(0);
 
-        let update_thread = Some(thread::spawn(move || {
+        let update_thread = move |input_handler: InputHandler| {
             debug!("Update thread spawned");
             Self::manage(
                 tank_update_sender,
                 maze_update_sender,
+                input_handler,
                 recv_controller_chan,
                 stop_signal_receiver,
             )
                 .unwrap_or_else(|err| error!("{}", err));
             debug!("Update thread exit");
-        }));
+        };
 
-        GameScene {
-            clean_color,
-            uniforms,
-            uniform_buffer,
-            uniform_bind_group,
-            tank_layer,
-            maze_layer,
-            maze_size: [1, 1],
-            tank_update_chan,
-            maze_update_chan,
-            add_controller_chan,
-            stop_signal_chan,
-            last_update: Instant::now(),
-        }
+        (
+            GameScene {
+                clean_color,
+                uniforms,
+                uniform_buffer,
+                uniform_bind_group,
+                tank_layer,
+                maze_layer,
+                maze_size: [1, 1],
+                tank_update_chan,
+                maze_update_chan,
+                add_controller_chan,
+                stop_signal_chan,
+                last_update: time::Instant::now(),
+            },
+            update_thread,
+        )
     }
 
     fn manage(
         tank_update_sender: Sender<Vec<TankInstance>>,
         maze_update_sender: Sender<MazeData>,
+        input_handler: InputHandler,
         ctrl_receiver: Receiver<Box<dyn Controller>>,
         stop_signal: Receiver<()>,
     ) -> Result<(), Box<dyn Error>> {
@@ -205,7 +202,7 @@ impl GameScene {
             joint_set: JointSet::new(),
         };
         physical.integration_parameters.dt = PHYSICAL_DT;
-        let ticker = tick(Duration::from_secs_f32(PHYSICAL_DT));
+        let ticker = tick(time::Duration::from_secs_f32(PHYSICAL_DT));
 
         let maze = Maze::new(&mut rand::thread_rng());
 
@@ -248,6 +245,7 @@ impl GameScene {
             let mut selector = Select::new();
             let i_ticker = selector.recv(&ticker);
             let i_update_sender = selector.send(&tank_update_sender);
+            let i_q = selector.recv(&input_handler.fire_receiver);
             let i_controller_receiver = selector.recv(&ctrl_receiver);
             let i_stop_receiver = selector.recv(&stop_signal);
 
@@ -261,6 +259,11 @@ impl GameScene {
                     i if i == i_ticker => {
                         oper.recv(&ticker)?;
                         continue 'next_update;
+                    }
+                    i if i == i_q => {
+                        oper.recv(&input_handler.fire_receiver)?;
+                        info!("fire!");
+                        // physical.add_player(input_handler)
                     }
                     i if i == i_update_sender => {
                         // This unwrap() never panic because this channel
@@ -288,7 +291,7 @@ impl Scene for GameScene {
     ) -> Result<(), wgpu::SwapChainError> {
         // Update data from physical thread
         if let Ok(instances) = self.tank_update_chan.try_recv() {
-            self.last_update = Instant::now();
+            self.last_update = time::Instant::now();
             self.tank_layer.update_instances(device, queue, instances);
         }
         if let Ok(maze_data) = self.maze_update_chan.try_recv() {

@@ -1,8 +1,11 @@
-use std::error::Error;
+use std::{error::Error, thread};
 
+use winit::event::VirtualKeyCode;
 use winit::window::Window;
 
 use crate::input::Controller;
+use crate::input::input_center::InputCenter;
+use crate::input::keyboard_controller::Key;
 use crate::scene::game_scene::{GameScene, Scene};
 
 pub struct WindowState {
@@ -14,6 +17,8 @@ pub struct WindowState {
     size: winit::dpi::PhysicalSize<u32>,
 
     current_scene: Box<dyn Scene>,
+    gilrs: gilrs::Gilrs,
+    pub input_center: InputCenter,
 }
 
 impl WindowState {
@@ -47,7 +52,24 @@ impl WindowState {
             present_mode: wgpu::PresentMode::Mailbox,
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
-        let current_scene = Box::new(GameScene::new(&device, &sc_desc));
+
+        let input_center = InputCenter::new();
+        let (game_scene, update_thread) = GameScene::new(&device, &sc_desc);
+        let current_scene = Box::new(game_scene);
+
+        let input_handler = input_center.input_handler();
+        thread::spawn(move || update_thread(input_handler));
+
+        current_scene.add_controller(Box::new(
+            input_center.keyboard_controller.create_sub_controller([
+                Key::LogicKey(VirtualKeyCode::E),
+                Key::LogicKey(VirtualKeyCode::D),
+                Key::LogicKey(VirtualKeyCode::S),
+                Key::LogicKey(VirtualKeyCode::F),
+            ]),
+        ));
+
+        let gilrs = gilrs::Gilrs::new()?;
 
         Ok(Self {
             surface,
@@ -57,6 +79,8 @@ impl WindowState {
             swap_chain,
             size,
             current_scene,
+            gilrs,
+            input_center,
         })
     }
 
@@ -74,6 +98,12 @@ impl WindowState {
         self.current_scene
             .render(&self.device, &self.queue, &frame, frame_size)?;
         Ok(())
+    }
+
+    pub fn update(&mut self) {
+        while let Some(ref event) = self.gilrs.next_event() {
+            self.input_center.gamepad_event(&mut self.gilrs, event);
+        }
     }
 
     pub fn add_controller(&self, ctrl: Box<dyn Controller>) {

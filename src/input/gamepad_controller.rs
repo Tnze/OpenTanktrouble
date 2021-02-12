@@ -6,29 +6,19 @@ use std::{
 use gilrs::{Axis, Button, Event, GamepadId, Gilrs};
 
 pub struct Gamepad {
-    gilrs: Gilrs,
     controllers: HashMap<GamepadId, Arc<Mutex<(f32, f32)>>>,
 }
 
 impl Gamepad {
     pub fn new() -> Gamepad {
         Gamepad {
-            gilrs: Gilrs::new().unwrap(),
             controllers: HashMap::new(),
         }
     }
-    pub fn next(&mut self) -> Option<Event> {
-        let event = self.gilrs.next_event();
-        if let Some(e) = event {
-            self.input_event(e);
-            self.gilrs.inc();
-        }
-        event
-    }
-    fn input_event(&mut self, Event { id, .. }: Event) {
-        if let Some(ctrl) = self.controllers.get(&id) {
+    pub fn input_event(&mut self, gilrs: &gilrs::Gilrs, Event { id, .. }: &Event) {
+        if let Some(ctrl) = self.controllers.get(id) {
             *ctrl.lock().unwrap() = {
-                let gamepad = self.gilrs.gamepad(id);
+                let gamepad = gilrs.gamepad(*id);
                 let get_axis = |axis: Axis| gamepad.axis_data(axis).map_or(0.0, |x| x.value());
                 let get_button = |pos, neg| {
                     (gamepad.is_pressed(pos) as i32 - gamepad.is_pressed(neg) as i32) as f32

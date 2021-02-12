@@ -4,7 +4,13 @@ use wgpu::util::DeviceExt;
 
 use crate::scene::render_layer::{BasicLayer, VertexAndIndexes};
 
-use super::{MazeData, Vertex};
+use super::Vertex;
+
+pub struct MazeData {
+    pub vertex: Vec<Vertex>,
+    pub index: Vec<u32>,
+    pub size: [usize; 2],
+}
 
 pub struct MazeLayer(BasicLayer<VertexAndIndexes>);
 
@@ -89,7 +95,7 @@ impl MazeLayer {
         })
     }
 
-    pub fn update_maze(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, maze: MazeData) {
+    pub fn update_maze(&mut self, device: &wgpu::Device, _queue: &wgpu::Queue, maze: MazeData) {
         self.buffer.vertex = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Maze Vertex Buffer"),
             contents: bytemuck::cast_slice(&maze.vertex),
