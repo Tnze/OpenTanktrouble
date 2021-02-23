@@ -6,7 +6,7 @@ use winit::window::Window;
 use crate::input::Controller;
 use crate::input::input_center::InputCenter;
 use crate::input::keyboard_controller::Key;
-use crate::scene::game_scene::{GameScene, Scene};
+use crate::scene::{game_scene::GameScene, Scene};
 
 pub struct WindowState {
     surface: wgpu::Surface,
@@ -60,14 +60,14 @@ impl WindowState {
         let input_handler = input_center.input_handler();
         thread::spawn(move || update_thread(input_handler));
 
-        current_scene.add_controller(Box::new(
-            input_center.keyboard_controller.create_sub_controller([
-                Key::LogicKey(VirtualKeyCode::E),
-                Key::LogicKey(VirtualKeyCode::D),
-                Key::LogicKey(VirtualKeyCode::S),
-                Key::LogicKey(VirtualKeyCode::F),
-            ]),
-        ));
+        // current_scene.add_controller(Box::new(
+        //     input_center.keyboard_controller.create_sub_controller([
+        //         Key::LogicKey(VirtualKeyCode::E),
+        //         Key::LogicKey(VirtualKeyCode::D),
+        //         Key::LogicKey(VirtualKeyCode::S),
+        //         Key::LogicKey(VirtualKeyCode::F),
+        //     ]),
+        // ));
 
         let gilrs = gilrs::Gilrs::new()?;
 

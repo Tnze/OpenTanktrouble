@@ -16,26 +16,14 @@ use wgpu::util::DeviceExt;
 use maze_layer::{MazeData, MazeLayer};
 use tank_layer::{TankInstance, TankLayer};
 
-use crate::input::Controller;
-use crate::input::input_center::InputHandler;
+use crate::input::{Controller, input_center::InputHandler};
 
-use super::{maze::Maze, render_layer::Layer};
+use super::{maze::Maze, render_layer::Layer, Scene};
 
 mod maze_layer;
 mod tank_layer;
 
 const PHYSICAL_DT: f32 = 1.0 / 90.0;
-
-pub(crate) trait Scene {
-    fn render(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        frame: &wgpu::SwapChainTexture,
-        frame_size: [u32; 2],
-    ) -> Result<(), wgpu::SwapChainError>;
-    fn add_controller(&self, ctrl: Box<dyn Controller>);
-}
 
 pub struct GameScene {
     clean_color: wgpu::Color,
@@ -245,7 +233,6 @@ impl GameScene {
             let mut selector = Select::new();
             let i_ticker = selector.recv(&ticker);
             let i_update_sender = selector.send(&tank_update_sender);
-            let i_q = selector.recv(&input_handler.fire_receiver);
             let i_controller_receiver = selector.recv(&ctrl_receiver);
             let i_stop_receiver = selector.recv(&stop_signal);
 
@@ -259,11 +246,6 @@ impl GameScene {
                     i if i == i_ticker => {
                         oper.recv(&ticker)?;
                         continue 'next_update;
-                    }
-                    i if i == i_q => {
-                        oper.recv(&input_handler.fire_receiver)?;
-                        info!("fire!");
-                        // physical.add_player(input_handler)
                     }
                     i if i == i_update_sender => {
                         // This unwrap() never panic because this channel
