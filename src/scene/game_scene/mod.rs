@@ -39,8 +39,11 @@ pub struct GameScene {
 
     tank_update_chan: Receiver<Vec<TankInstance>>,
     maze_update_chan: Receiver<MazeData>,
-    add_controller_chan: Sender<Box<dyn Controller>>,
-    stop_signal_chan: Sender<()>,
+    stop_signal_sender: Sender<()>,
+
+    tank_update_sender: Sender<Vec<TankInstance>>,
+    maze_update_sender: Sender<MazeData>,
+    stop_signal_chan: Receiver<()>,
 
     last_update: time::Instant,
 }
@@ -86,8 +89,8 @@ struct Uniforms {
 impl GameScene {
     pub(crate) fn new(
         device: &wgpu::Device,
-        sc_desc: &wgpu::SwapChainDescriptor,
-    ) -> (GameScene, impl FnOnce(InputHandler)) {
+        format: wgpu::TextureFormat,
+    ) -> Box<dyn Scene + Sync + Send> {
         info!("Creating GameScene");
         let clean_color = wgpu::Color {
             r: 1.0,
@@ -129,55 +132,36 @@ impl GameScene {
             label: Some("uniform_bind_group"),
         });
 
-        let tank_layer = TankLayer::new(device, sc_desc.format.into(), &uniform_bind_group_layout);
-        let maze_layer = MazeLayer::new(device, sc_desc.format.into(), &uniform_bind_group_layout);
+        let tank_layer = TankLayer::new(device, format.into(), &uniform_bind_group_layout);
+        let maze_layer = MazeLayer::new(device, format.into(), &uniform_bind_group_layout);
 
-        // Init controller channel
-        let (add_controller_chan, recv_controller_chan) = unbounded();
         // Start physic emulation
         let (tank_update_sender, tank_update_chan) = bounded(0);
         let (maze_update_sender, maze_update_chan) = bounded(0);
-        let (stop_signal_chan, stop_signal_receiver) = bounded(0);
+        let (stop_signal_sender, stop_signal_chan) = bounded(0);
 
-        let update_thread = move |input_handler: InputHandler| {
-            debug!("Update thread spawned");
-            Self::manage(
-                tank_update_sender,
-                maze_update_sender,
-                input_handler,
-                recv_controller_chan,
-                stop_signal_receiver,
-            )
-                .unwrap_or_else(|err| error!("{}", err));
-            debug!("Update thread exit");
-        };
+        Box::new(GameScene {
+            clean_color,
+            uniforms,
+            uniform_buffer,
+            uniform_bind_group,
+            tank_layer,
+            maze_layer,
+            maze_size: [1, 1],
 
-        (
-            GameScene {
-                clean_color,
-                uniforms,
-                uniform_buffer,
-                uniform_bind_group,
-                tank_layer,
-                maze_layer,
-                maze_size: [1, 1],
-                tank_update_chan,
-                maze_update_chan,
-                add_controller_chan,
-                stop_signal_chan,
-                last_update: time::Instant::now(),
-            },
-            update_thread,
-        )
+            tank_update_chan,
+            maze_update_chan,
+            stop_signal_sender,
+
+            tank_update_sender,
+            maze_update_sender,
+            stop_signal_chan,
+
+            last_update: time::Instant::now(),
+        })
     }
 
-    fn manage(
-        tank_update_sender: Sender<Vec<TankInstance>>,
-        maze_update_sender: Sender<MazeData>,
-        input_handler: InputHandler,
-        ctrl_receiver: Receiver<Box<dyn Controller>>,
-        stop_signal: Receiver<()>,
-    ) -> Result<(), Box<dyn Error>> {
+    fn manage(&self, input_handler: &InputHandler) -> Result<(), Box<dyn Error>> {
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
             seq_number: 0,
@@ -196,7 +180,7 @@ impl GameScene {
 
         // Generate mesh for render
         let (maze_mesh_vertices, maze_mesh_indexes) = maze.triangle_mesh();
-        maze_update_sender.send(MazeData {
+        self.maze_update_sender.send(MazeData {
             vertex: maze_mesh_vertices,
             index: maze_mesh_indexes,
             size: [maze.width, maze.height],
@@ -232,15 +216,14 @@ impl GameScene {
             // delete update_sender after send once.
             let mut selector = Select::new();
             let i_ticker = selector.recv(&ticker);
-            let i_update_sender = selector.send(&tank_update_sender);
-            let i_controller_receiver = selector.recv(&ctrl_receiver);
-            let i_stop_receiver = selector.recv(&stop_signal);
+            let i_update_sender = selector.send(&self.tank_update_sender);
+            let i_stop_receiver = selector.recv(&self.stop_signal_chan);
 
             loop {
                 let oper = selector.select();
                 match oper.index() {
                     i if i == i_stop_receiver => {
-                        oper.recv(&stop_signal)?;
+                        oper.recv(&self.stop_signal_chan)?;
                         return Ok(());
                     }
                     i if i == i_ticker => {
@@ -250,11 +233,8 @@ impl GameScene {
                     i if i == i_update_sender => {
                         // This unwrap() never panic because this channel
                         // is delete from selector next line.
-                        oper.send(&tank_update_sender, update_data.take().unwrap())?;
+                        oper.send(&self.tank_update_sender, update_data.take().unwrap())?;
                         selector.remove(i_update_sender);
-                    }
-                    i if i == i_controller_receiver => {
-                        physical.add_player(oper.recv(&ctrl_receiver)?);
                     }
                     _ => unreachable!(),
                 }
@@ -326,17 +306,24 @@ impl Scene for GameScene {
         Ok(())
     }
 
-    fn add_controller(&self, ctrl: Box<dyn Controller>) {
-        self.add_controller_chan.send(ctrl).unwrap_or_else(|err| {
-            error!("Add controller to scene error: {}", err);
-        });
+    fn update(
+        &self,
+        device: &wgpu::Device,
+        format: wgpu::TextureFormat,
+        input_handler: &InputHandler,
+    ) -> Box<dyn Scene + Sync + Send> {
+        debug!("Update thread spawned");
+        self.manage(input_handler)
+            .unwrap_or_else(|err| error!("{}", err));
+        debug!("Update thread exit");
+        panic!("GameScene update thread finished")
     }
 }
 
 impl Drop for GameScene {
     fn drop(&mut self) {
         // This will block until update thread quit
-        self.stop_signal_chan.send(()).unwrap();
+        self.stop_signal_sender.send(()).unwrap();
     }
 }
 

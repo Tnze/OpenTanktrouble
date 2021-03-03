@@ -12,10 +12,9 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Clear input event stream">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="manager framework of prepare_scene">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/input/input_center.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/input_center.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/prepare_scene.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/prepare_scene.rs" afterDir="false" />
@@ -82,7 +81,7 @@
     <property name="nodejs_package_manager_path" value="npm" />
     <property name="org.rust.cargo.project.model.PROJECT_DISCOVERY" value="true" />
     <property name="restartRequiresConfirmation" value="false" />
-    <property name="settings.editor.selected.configurable" value="web.server" />
+    <property name="settings.editor.selected.configurable" value="CPPToolchains" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -101,6 +100,7 @@
       <command value="cargo doc" />
       <command value="cargo tree" />
       <command value="cargo fix" />
+      <command value="cargo clean" />
     </option>
   </component>
   <component name="RunManager" selected="Cargo.Debug">
@@ -211,6 +211,21 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration name="clean" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
+      <option name="command" value="clean" />
+      <option name="workingDirectory" value="file://$PROJECT_DIR$" />
+      <option name="channel" value="DEFAULT" />
+      <option name="requiredFeatures" value="true" />
+      <option name="allFeatures" value="false" />
+      <option name="emulateTerminal" value="false" />
+      <option name="backtrace" value="SHORT" />
+      <envs />
+      <option name="isRedirectInput" value="false" />
+      <option name="redirectInputPath" value="" />
+      <method v="2">
+        <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="fix" type="CargoCommandRunConfiguration" factoryName="Cargo Command" temporary="true">
       <option name="command" value="fix" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -241,6 +256,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.Clippy" />
@@ -251,9 +271,11 @@
       <item itemvalue="Cargo.Test maze::tests" />
       <item itemvalue="Cargo.fix" />
       <item itemvalue="Cargo.fmt" />
+      <item itemvalue="Cargo.clean" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Cargo.clean" />
         <item itemvalue="Cargo.fmt" />
         <item itemvalue="Cargo.fix" />
         <item itemvalue="Cargo.Test maze::tests" />
@@ -337,7 +359,18 @@
       <workItem from="1613448082536" duration="3747000" />
       <workItem from="1613476678596" duration="1212000" />
       <workItem from="1613704272028" duration="4171000" />
-      <workItem from="1614097706506" duration="2994000" />
+      <workItem from="1614097706506" duration="3315000" />
+      <workItem from="1614265226580" duration="361000" />
+      <workItem from="1614334849836" duration="21000" />
+      <workItem from="1614335056896" duration="598000" />
+      <workItem from="1614613317760" duration="785000" />
+      <workItem from="1614670897256" duration="554000" />
+      <workItem from="1614671474196" duration="324000" />
+      <workItem from="1614671919989" duration="866000" />
+      <workItem from="1614673613259" duration="1079000" />
+      <workItem from="1614685520644" duration="2628000" />
+      <workItem from="1614691687075" duration="494000" />
+      <workItem from="1614734734981" duration="18587000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -584,7 +617,14 @@
       <option name="project" value="LOCAL" />
       <updated>1613110692942</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="manager framework of prepare_scene">
+      <created>1614101122382</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1614101122382</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -615,7 +655,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Press F11 to switch between fullscreen-mode and window-mode" />
     <MESSAGE value="Fix proj scale" />
     <MESSAGE value="Building scene system" />
     <MESSAGE value="Restruct gamepad_controller parser and test the scene switch" />
@@ -640,7 +679,8 @@
     <MESSAGE value="Gracefully quit update thread." />
     <MESSAGE value="Move layers to separate module" />
     <MESSAGE value="Clear input event stream" />
-    <option name="LAST_COMMIT_MESSAGE" value="Clear input event stream" />
+    <MESSAGE value="manager framework of prepare_scene" />
+    <option name="LAST_COMMIT_MESSAGE" value="manager framework of prepare_scene" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

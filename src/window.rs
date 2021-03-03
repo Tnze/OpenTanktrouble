@@ -1,22 +1,23 @@
 use std::{error::Error, thread};
+use std::sync::Arc;
 
+use crossbeam_channel::{Receiver, unbounded};
 use winit::event::VirtualKeyCode;
 use winit::window::Window;
 
-use crate::input::Controller;
-use crate::input::input_center::InputCenter;
-use crate::input::keyboard_controller::Key;
-use crate::scene::{game_scene::GameScene, Scene};
+use crate::input::{Controller, input_center::InputCenter, keyboard_controller::Key};
+use crate::scene::{game_scene::GameScene, prepare_scene::PrepareScene, Scene};
 
 pub struct WindowState {
     surface: wgpu::Surface,
-    device: wgpu::Device,
+    device: Arc<wgpu::Device>,
     queue: wgpu::Queue,
     sc_desc: wgpu::SwapChainDescriptor,
     swap_chain: wgpu::SwapChain,
     size: winit::dpi::PhysicalSize<u32>,
 
-    current_scene: Box<dyn Scene>,
+    current_scene: Arc<Box<dyn Scene + Sync + Send>>,
+    update_scene_chan: Receiver<Arc<Box<dyn Scene + Sync + Send>>>,
     gilrs: gilrs::Gilrs,
     pub input_center: InputCenter,
 }
@@ -44,6 +45,7 @@ impl WindowState {
                 None, // Trace path
             )
             .await?;
+        let device = Arc::new(device);
         let sc_desc = wgpu::SwapChainDescriptor {
             usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
             format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -53,21 +55,22 @@ impl WindowState {
         };
         let swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
+        let (update_scene_sender, update_scene_chan) = unbounded();
         let input_center = InputCenter::new();
-        let (game_scene, update_thread) = GameScene::new(&device, &sc_desc);
-        let current_scene = Box::new(game_scene);
-
         let input_handler = input_center.input_handler();
-        thread::spawn(move || update_thread(input_handler));
-
-        // current_scene.add_controller(Box::new(
-        //     input_center.keyboard_controller.create_sub_controller([
-        //         Key::LogicKey(VirtualKeyCode::E),
-        //         Key::LogicKey(VirtualKeyCode::D),
-        //         Key::LogicKey(VirtualKeyCode::S),
-        //         Key::LogicKey(VirtualKeyCode::F),
-        //     ]),
-        // ));
+        {
+            let device = device.clone();
+            let format = sc_desc.format;
+            thread::spawn(move || {
+                let mut scene = Arc::new(PrepareScene::new(device.clone(), format));
+                loop {
+                    update_scene_sender.send(scene.clone()).unwrap();
+                    let new_scene = scene.update(device.as_ref(), format, &input_handler);
+                    scene = Arc::new(new_scene);
+                }
+            });
+        }
+        let current_scene = update_scene_chan.recv()?;
 
         let gilrs = gilrs::Gilrs::new()?;
 
@@ -79,6 +82,7 @@ impl WindowState {
             swap_chain,
             size,
             current_scene,
+            update_scene_chan,
             gilrs,
             input_center,
         })
@@ -104,9 +108,5 @@ impl WindowState {
         while let Some(ref event) = self.gilrs.next_event() {
             self.input_center.gamepad_event(&mut self.gilrs, event);
         }
-    }
-
-    pub fn add_controller(&self, ctrl: Box<dyn Controller>) {
-        self.current_scene.add_controller(ctrl);
     }
 }

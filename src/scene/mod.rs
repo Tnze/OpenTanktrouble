@@ -1,9 +1,9 @@
-use crate::input::Controller;
+use crate::input::{Controller, input_center::InputHandler};
 
 // pub mod main_menu;
 pub mod game_scene;
 mod maze;
-mod prepare_scene;
+pub(crate) mod prepare_scene;
 mod render_layer;
 
 pub trait Scene {
@@ -14,5 +14,10 @@ pub trait Scene {
         frame: &wgpu::SwapChainTexture,
         frame_size: [u32; 2],
     ) -> Result<(), wgpu::SwapChainError>;
-    fn add_controller(&self, ctrl: Box<dyn Controller>);
+    fn update(
+        &self,
+        device: &wgpu::Device,
+        format: wgpu::TextureFormat,
+        input_handler: &InputHandler,
+    ) -> Box<dyn Scene + Sync + Send>;
 }
