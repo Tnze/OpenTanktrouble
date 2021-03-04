@@ -18,7 +18,7 @@ use tank_layer::{TankInstance, TankLayer};
 
 use crate::input::{Controller, input_center::InputHandler};
 
-use super::{maze::Maze, render_layer::Layer, Scene};
+use super::{maze::Maze, render_layer::Layer, SceneRender, SceneUpdater};
 
 mod maze_layer;
 mod tank_layer;
@@ -46,6 +46,31 @@ pub struct GameScene {
     stop_signal_chan: Receiver<()>,
 
     last_update: time::Instant,
+}
+
+pub struct GameSceneRender {
+    clean_color: wgpu::Color,
+
+    uniforms: Uniforms,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+
+    tank_layer: TankLayer,
+    maze_layer: MazeLayer,
+
+    maze_size: [usize; 2],
+
+    tank_update_chan: Receiver<Vec<TankInstance>>,
+    maze_update_chan: Receiver<MazeData>,
+    stop_signal_sender: Sender<()>,
+
+    last_update: time::Instant,
+}
+
+pub struct GameSceneUpdater {
+    tank_update_sender: Sender<Vec<TankInstance>>,
+    maze_update_sender: Sender<MazeData>,
+    stop_signal_chan: Receiver<()>,
 }
 
 struct PhysicalStatus {
@@ -90,7 +115,7 @@ impl GameScene {
     pub(crate) fn new(
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
-    ) -> Box<dyn Scene + Sync + Send> {
+    ) -> (GameSceneRender, GameSceneUpdater) {
         info!("Creating GameScene");
         let clean_color = wgpu::Color {
             r: 1.0,
@@ -140,27 +165,32 @@ impl GameScene {
         let (maze_update_sender, maze_update_chan) = bounded(0);
         let (stop_signal_sender, stop_signal_chan) = bounded(0);
 
-        Box::new(GameScene {
-            clean_color,
-            uniforms,
-            uniform_buffer,
-            uniform_bind_group,
-            tank_layer,
-            maze_layer,
-            maze_size: [1, 1],
+        (
+            GameSceneRender {
+                clean_color,
+                uniforms,
+                uniform_buffer,
+                uniform_bind_group,
+                tank_layer,
+                maze_layer,
+                maze_size: [1, 1],
 
-            tank_update_chan,
-            maze_update_chan,
-            stop_signal_sender,
+                tank_update_chan,
+                maze_update_chan,
+                stop_signal_sender,
 
-            tank_update_sender,
-            maze_update_sender,
-            stop_signal_chan,
-
-            last_update: time::Instant::now(),
-        })
+                last_update: time::Instant::now(),
+            },
+            GameSceneUpdater {
+                tank_update_sender,
+                maze_update_sender,
+                stop_signal_chan,
+            },
+        )
     }
+}
 
+impl GameSceneUpdater {
     fn manage(&self, input_handler: &InputHandler) -> Result<(), Box<dyn Error>> {
         let mut physical = PhysicalStatus {
             tanks: Vec::new(),
@@ -243,7 +273,7 @@ impl GameScene {
     }
 }
 
-impl Scene for GameScene {
+impl SceneRender for GameSceneRender {
     fn render(
         &mut self,
         device: &wgpu::Device,
@@ -305,13 +335,15 @@ impl Scene for GameScene {
         queue.submit(std::iter::once(encoder.finish()));
         Ok(())
     }
+}
 
+impl SceneUpdater for GameSceneUpdater {
     fn update(
         &self,
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         input_handler: &InputHandler,
-    ) -> Box<dyn Scene + Sync + Send> {
+    ) -> (Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>) {
         debug!("Update thread spawned");
         self.manage(input_handler)
             .unwrap_or_else(|err| error!("{}", err));

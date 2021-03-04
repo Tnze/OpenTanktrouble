@@ -6,7 +6,7 @@ mod maze;
 pub(crate) mod prepare_scene;
 mod render_layer;
 
-pub trait Scene {
+pub trait SceneRender {
     fn render(
         &mut self,
         device: &wgpu::Device,
@@ -14,10 +14,13 @@ pub trait Scene {
         frame: &wgpu::SwapChainTexture,
         frame_size: [u32; 2],
     ) -> Result<(), wgpu::SwapChainError>;
+}
+
+pub trait SceneUpdater {
     fn update(
         &self,
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         input_handler: &InputHandler,
-    ) -> Box<dyn Scene + Sync + Send>;
+    ) -> (Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>);
 }

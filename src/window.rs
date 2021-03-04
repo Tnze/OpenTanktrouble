@@ -1,12 +1,11 @@
-use std::{error::Error, thread};
-use std::sync::Arc;
+use std::{error::Error, sync::Arc, thread};
 
 use crossbeam_channel::{Receiver, unbounded};
 use winit::event::VirtualKeyCode;
 use winit::window::Window;
 
 use crate::input::{Controller, input_center::InputCenter, keyboard_controller::Key};
-use crate::scene::{game_scene::GameScene, prepare_scene::PrepareScene, Scene};
+use crate::scene::{game_scene::GameScene, prepare_scene::PrepareScene, SceneRender, SceneUpdater};
 
 pub struct WindowState {
     surface: wgpu::Surface,
@@ -16,8 +15,8 @@ pub struct WindowState {
     swap_chain: wgpu::SwapChain,
     size: winit::dpi::PhysicalSize<u32>,
 
-    current_scene: Arc<Box<dyn Scene + Sync + Send>>,
-    update_scene_chan: Receiver<Arc<Box<dyn Scene + Sync + Send>>>,
+    current_scene: Box<dyn SceneRender + Sync + Send>,
+    update_scene_chan: Receiver<Box<dyn SceneRender + Sync + Send>>,
     gilrs: gilrs::Gilrs,
     pub input_center: InputCenter,
 }
@@ -62,11 +61,19 @@ impl WindowState {
             let device = device.clone();
             let format = sc_desc.format;
             thread::spawn(move || {
-                let mut scene = Arc::new(PrepareScene::new(device.clone(), format));
+                let (mut render, mut updater) = PrepareScene::new(device.clone(), format);
+                let mut render: Option<Box<dyn SceneRender + Sync + std::marker::Send>> =
+                    Some(Box::new(render));
+                let mut updater: Option<Box<dyn SceneUpdater>> = Some(Box::new(updater));
                 loop {
-                    update_scene_sender.send(scene.clone()).unwrap();
-                    let new_scene = scene.update(device.as_ref(), format, &input_handler);
-                    scene = Arc::new(new_scene);
+                    update_scene_sender.send(render.take().unwrap()).unwrap();
+                    let (render_n, updater_n) =
+                        updater
+                            .take()
+                            .unwrap()
+                            .update(device.as_ref(), format, &input_handler);
+                    render = Some(render_n);
+                    updater = Some(updater_n);
                 }
             });
         }
@@ -107,6 +114,9 @@ impl WindowState {
     pub fn update(&mut self) {
         while let Some(ref event) = self.gilrs.next_event() {
             self.input_center.gamepad_event(&mut self.gilrs, event);
+        }
+        if let Ok(scene) = self.update_scene_chan.try_recv() {
+            self.current_scene = scene;
         }
     }
 }

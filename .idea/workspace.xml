@@ -12,7 +12,7 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="manager framework of prepare_scene">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Rust is forcing me to divide the structure into two parts. I hate rust.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" afterDir="false" />
@@ -103,7 +103,7 @@
       <command value="cargo clean" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.Debug">
+  <component name="RunManager" selected="Cargo.fmt">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -256,11 +256,6 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <list>
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.Clippy" />
@@ -275,8 +270,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Cargo.clean" />
         <item itemvalue="Cargo.fmt" />
+        <item itemvalue="Cargo.clean" />
         <item itemvalue="Cargo.fix" />
         <item itemvalue="Cargo.Test maze::tests" />
         <item itemvalue="Cargo.Expand open_tanktrouble::scene::playground" />
@@ -370,7 +365,8 @@
       <workItem from="1614673613259" duration="1079000" />
       <workItem from="1614685520644" duration="2628000" />
       <workItem from="1614691687075" duration="494000" />
-      <workItem from="1614734734981" duration="18587000" />
+      <workItem from="1614734734981" duration="22795000" />
+      <workItem from="1614833504794" duration="4113000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -624,7 +620,14 @@
       <option name="project" value="LOCAL" />
       <updated>1614101122382</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="Rust is forcing me to divide the structure into two parts. I hate rust.">
+      <created>1614774354954</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1614774354954</updated>
+    </task>
+    <option name="localTasksCounter" value="38" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -655,7 +658,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Fix proj scale" />
     <MESSAGE value="Building scene system" />
     <MESSAGE value="Restruct gamepad_controller parser and test the scene switch" />
     <MESSAGE value="Add round button and gear vertex generator" />
@@ -680,7 +682,8 @@
     <MESSAGE value="Move layers to separate module" />
     <MESSAGE value="Clear input event stream" />
     <MESSAGE value="manager framework of prepare_scene" />
-    <option name="LAST_COMMIT_MESSAGE" value="manager framework of prepare_scene" />
+    <MESSAGE value="Rust is forcing me to divide the structure into two parts. I hate rust." />
+    <option name="LAST_COMMIT_MESSAGE" value="Rust is forcing me to divide the structure into two parts. I hate rust." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
