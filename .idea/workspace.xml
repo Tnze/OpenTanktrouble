@@ -12,9 +12,14 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Rust is forcing me to divide the structure into two parts. I hate rust.">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Successfully switch scene">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/input/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/input/input_center.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/input_center.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/input/keyboard_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/keyboard_controller.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/prepare_scene.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/prepare_scene.rs" afterDir="false" />
@@ -50,6 +55,9 @@
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="u5vv9nsg" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedIndex" value="1" />
   </component>
   <component name="ProjectId" id="1mBshPY1uJfziLMT3tDLBm7KdcL" />
   <component name="ProjectLevelVcsManager">
@@ -103,7 +111,7 @@
       <command value="cargo clean" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.fmt">
+  <component name="RunManager" selected="Cargo.Debug">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -143,7 +151,7 @@
       <option name="emulateTerminal" value="false" />
       <option name="backtrace" value="SHORT" />
       <envs>
-        <env name="RUST_LOG" value="info" />
+        <env name="RUST_LOG" value="open_tanktrouble=debug" />
       </envs>
       <option name="isRedirectInput" value="false" />
       <option name="redirectInputPath" value="" />
@@ -366,7 +374,11 @@
       <workItem from="1614685520644" duration="2628000" />
       <workItem from="1614691687075" duration="494000" />
       <workItem from="1614734734981" duration="22795000" />
-      <workItem from="1614833504794" duration="4113000" />
+      <workItem from="1614833504794" duration="4671000" />
+      <workItem from="1614866706986" duration="2115000" />
+      <workItem from="1614917962599" duration="14770000" />
+      <workItem from="1614951979765" duration="1005000" />
+      <workItem from="1614999711581" duration="872000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -627,7 +639,14 @@
       <option name="project" value="LOCAL" />
       <updated>1614774354954</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL-00038" summary="Successfully switch scene">
+      <created>1614857289007</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1614857289007</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -658,7 +677,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Building scene system" />
     <MESSAGE value="Restruct gamepad_controller parser and test the scene switch" />
     <MESSAGE value="Add round button and gear vertex generator" />
     <MESSAGE value="Create and use a PairIterator" />
@@ -683,7 +701,8 @@
     <MESSAGE value="Clear input event stream" />
     <MESSAGE value="manager framework of prepare_scene" />
     <MESSAGE value="Rust is forcing me to divide the structure into two parts. I hate rust." />
-    <option name="LAST_COMMIT_MESSAGE" value="Rust is forcing me to divide the structure into two parts. I hate rust." />
+    <MESSAGE value="Successfully switch scene" />
+    <option name="LAST_COMMIT_MESSAGE" value="Successfully switch scene" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

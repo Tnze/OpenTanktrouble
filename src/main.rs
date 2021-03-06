@@ -1,18 +1,12 @@
 use std::{error::Error, process::exit};
 
 use futures::executor::block_on;
-use gilrs::Gilrs;
 #[allow(unused_imports)]
 use log::{debug, error, info};
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Fullscreen, WindowBuilder},
-};
-
-use crate::input::{
-    gamepad_controller::Gamepad,
-    keyboard_controller::{Key::LogicKey, Keyboard},
 };
 
 mod input;

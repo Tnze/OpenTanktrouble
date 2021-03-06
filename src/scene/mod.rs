@@ -22,5 +22,5 @@ pub trait SceneUpdater {
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         input_handler: &InputHandler,
-    ) -> (Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>);
+    ) -> Option<(Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>)>;
 }

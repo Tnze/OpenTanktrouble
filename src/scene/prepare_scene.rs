@@ -1,14 +1,13 @@
-use std::error::Error;
-use std::sync::Arc;
+use std::{error::Error, sync::Arc};
 
-use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
 use wgpu::{Device, Queue, SwapChainError, SwapChainTexture};
+use winit::event::VirtualKeyCode;
 
 use crate::input::{Controller, input_center::InputHandler};
 
-use super::{game_scene::GameScene, SceneRender, SceneUpdater};
+use super::{game_scene, SceneRender, SceneUpdater};
 
 enum ControllerStatus {
     Prepared,
@@ -21,48 +20,48 @@ struct Player {
     status: ControllerStatus,
 }
 
-pub struct PrepareScene {
-    player_list: Vec<Player>,
-}
-
-pub struct PrepareSceneRender {
-    player_list: Vec<Player>,
-}
+pub struct PrepareSceneRender {}
 
 pub struct PrepareSceneUpdater {}
 
-impl PrepareScene {
-    pub fn new(
-        device: Arc<wgpu::Device>,
-        format: wgpu::TextureFormat,
-    ) -> (PrepareSceneRender, PrepareSceneUpdater) {
-        (
-            PrepareSceneRender {
-                player_list: vec![],
-            },
-            PrepareSceneUpdater {},
-        )
-    }
+pub fn new(
+    device: Arc<wgpu::Device>,
+    format: wgpu::TextureFormat,
+) -> (PrepareSceneRender, PrepareSceneUpdater) {
+    (PrepareSceneRender {}, PrepareSceneUpdater {})
 }
 
 impl PrepareSceneUpdater {
-    fn manage(
-        input_handler: &InputHandler,
-        // stop_signal: Receiver<()>,
-    ) -> Result<(), Box<dyn Error>> {
-        let on_keyboard_input = |event| -> Result<(), Box<dyn Error>> {
-            let winit::event::KeyboardInput { state, .. } = event;
+    fn manage(&self, input_handler: &InputHandler) -> Result<Vec<Player>, Box<dyn Error>> {
+        let mut finish = false;
+        let mut players = vec![];
+
+        let on_keyboard_input = |event| -> Result<bool, Box<dyn Error>> {
+            let winit::event::KeyboardInput {
+                state,
+                scancode,
+                virtual_keycode,
+                ..
+            } = event;
+            if let Some(VirtualKeyCode::Q) = virtual_keycode {
+                // players.push(Player{
+                //     controller: Box::new(input_handler.),
+                //     status: ControllerStatus::Prepared
+                // });
+                return Ok(true);
+            }
+
             debug!("{:?}", state);
-            Ok(())
+            Ok(false)
         };
-        let on_gamepad_input = |event: gilrs::Event| -> Result<(), Box<dyn Error>> { Ok(()) };
-        loop {
-            crossbeam_channel::select! {
+        let on_gamepad_input = |event: gilrs::Event| -> Result<bool, Box<dyn Error>> { Ok(false) };
+        while !finish {
+            finish = crossbeam_channel::select! {
                 recv(input_handler.keyboard_event) -> res => on_keyboard_input(res?)?,
                 recv(input_handler.gamepad_event) -> res => on_gamepad_input(res?)?,
-                // recv(stop_signal) -> _ => return Ok(()),
             }
         }
+        Ok(players)
     }
 }
 
@@ -84,9 +83,12 @@ impl SceneUpdater for PrepareSceneUpdater {
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
         input_handler: &InputHandler,
-    ) -> (Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>) {
-        // Self::manage(input_handler).unwrap();
-        let (render, updater) = GameScene::new(device, format);
-        (Box::new(render), Box::new(updater))
+    ) -> Option<(Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>)> {
+        let players = self.manage(input_handler).unwrap();
+        let (render, updater) = game_scene::new(device, format);
+        for p in players {
+            updater.add_player(p.controller);
+        }
+        Some((Box::new(render), Box::new(updater)))
     }
 }

@@ -1,11 +1,12 @@
 use std::{error::Error, sync::Arc, thread};
 
-use crossbeam_channel::{Receiver, unbounded};
-use winit::event::VirtualKeyCode;
+use crossbeam_channel::{Receiver, Sender, unbounded};
+#[allow(unused_imports)]
+use log::{debug, error, info, log_enabled};
 use winit::window::Window;
 
 use crate::input::{Controller, input_center::InputCenter, keyboard_controller::Key};
-use crate::scene::{game_scene::GameScene, prepare_scene::PrepareScene, SceneRender, SceneUpdater};
+use crate::scene::{prepare_scene, SceneRender, SceneUpdater};
 
 pub struct WindowState {
     surface: wgpu::Surface,
@@ -61,20 +62,18 @@ impl WindowState {
             let device = device.clone();
             let format = sc_desc.format;
             thread::spawn(move || {
-                let (mut render, mut updater) = PrepareScene::new(device.clone(), format);
-                let mut render: Option<Box<dyn SceneRender + Sync + std::marker::Send>> =
-                    Some(Box::new(render));
-                let mut updater: Option<Box<dyn SceneUpdater>> = Some(Box::new(updater));
-                loop {
-                    update_scene_sender.send(render.take().unwrap()).unwrap();
-                    let (render_n, updater_n) =
-                        updater
-                            .take()
-                            .unwrap()
-                            .update(device.as_ref(), format, &input_handler);
-                    render = Some(render_n);
-                    updater = Some(updater_n);
+                debug!("Update thread start");
+                let (mut render, mut updater) = prepare_scene::new(device.clone(), format);
+                let render: Box<dyn SceneRender + Sync + std::marker::Send> = Box::new(render);
+                update_scene_sender.send(render).unwrap();
+                let mut updater: Box<dyn SceneUpdater> = Box::new(updater);
+                while let Some((render_n, updater_n)) =
+                updater.update(device.as_ref(), format, &input_handler)
+                {
+                    update_scene_sender.send(render_n).unwrap();
+                    updater = updater_n;
                 }
+                debug!("Update thread stop");
             });
         }
         let current_scene = update_scene_chan.recv()?;

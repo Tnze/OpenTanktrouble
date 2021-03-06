@@ -7,6 +7,8 @@ use super::gamepad_controller::Gamepad;
 use super::keyboard_controller::Keyboard;
 
 pub struct InputCenter {
+    gamepad_ctrl: Gamepad,
+    keyboard_ctrl: Keyboard,
     keyboard_sender: Sender<KeyboardInput>,
     gamepad_sender: Sender<gilrs::Event>,
     input_handler: InputHandler,
@@ -23,6 +25,8 @@ impl InputCenter {
         let (keyboard_sender, keyboard_receiver) = unbounded();
         let (gamepad_sender, gamepad_receiver) = unbounded();
         InputCenter {
+            gamepad_ctrl: Gamepad::new(),
+            keyboard_ctrl: Keyboard::new(),
             keyboard_sender,
             gamepad_sender,
             input_handler: InputHandler {
@@ -36,6 +40,7 @@ impl InputCenter {
         match event {
             WindowEvent::KeyboardInput { input, .. } => {
                 self.keyboard_sender.send(*input).unwrap_or(());
+                self.keyboard_ctrl.input_event(input);
             }
             _ => {}
         }
@@ -43,6 +48,7 @@ impl InputCenter {
 
     pub fn gamepad_event(&mut self, gilrs: &mut gilrs::Gilrs, event: &gilrs::Event) {
         self.gamepad_sender.send(*event).unwrap_or(());
+        self.gamepad_ctrl.input_event(gilrs, event);
     }
 
     pub fn input_handler(&self) -> InputHandler {

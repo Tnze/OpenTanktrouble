@@ -34,9 +34,7 @@ impl Keyboard {
             key_map.insert(Key::LogicKey(*code), *state);
         }
     }
-}
 
-impl Keyboard {
     pub fn create_sub_controller(&self, movement_keys: [Key; 4]) -> Controller {
         Controller {
             movement_keys,

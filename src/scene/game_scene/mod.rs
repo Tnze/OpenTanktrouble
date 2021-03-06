@@ -1,4 +1,5 @@
 use std::{error::Error, time};
+use std::cell::RefCell;
 
 use cgmath::SquareMatrix;
 use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
@@ -25,29 +26,6 @@ mod tank_layer;
 
 const PHYSICAL_DT: f32 = 1.0 / 90.0;
 
-pub struct GameScene {
-    clean_color: wgpu::Color,
-
-    uniforms: Uniforms,
-    uniform_buffer: wgpu::Buffer,
-    uniform_bind_group: wgpu::BindGroup,
-
-    tank_layer: TankLayer,
-    maze_layer: MazeLayer,
-
-    maze_size: [usize; 2],
-
-    tank_update_chan: Receiver<Vec<TankInstance>>,
-    maze_update_chan: Receiver<MazeData>,
-    stop_signal_sender: Sender<()>,
-
-    tank_update_sender: Sender<Vec<TankInstance>>,
-    maze_update_sender: Sender<MazeData>,
-    stop_signal_chan: Receiver<()>,
-
-    last_update: time::Instant,
-}
-
 pub struct GameSceneRender {
     clean_color: wgpu::Color,
 
@@ -68,6 +46,8 @@ pub struct GameSceneRender {
 }
 
 pub struct GameSceneUpdater {
+    physical: RefCell<PhysicalStatus>,
+
     tank_update_sender: Sender<Vec<TankInstance>>,
     maze_update_sender: Sender<MazeData>,
     stop_signal_chan: Receiver<()>,
@@ -111,98 +91,99 @@ struct Uniforms {
     forecast: f32,
 }
 
-impl GameScene {
-    pub(crate) fn new(
-        device: &wgpu::Device,
-        format: wgpu::TextureFormat,
-    ) -> (GameSceneRender, GameSceneUpdater) {
-        info!("Creating GameScene");
-        let clean_color = wgpu::Color {
-            r: 1.0,
-            g: 1.0,
-            b: 1.0,
-            a: 1.0,
-        };
+pub(crate) fn new(
+    device: &wgpu::Device,
+    format: wgpu::TextureFormat,
+) -> (GameSceneRender, GameSceneUpdater) {
+    info!("Creating GameScene");
+    let clean_color = wgpu::Color {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    };
 
-        let uniforms = Uniforms {
-            view_proj: cgmath::Matrix4::identity().into(),
-            forecast: 0.0,
-        };
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Tank Uniform Buffer"),
-            contents: bytemuck::cast_slice(&[uniforms]),
-            usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
-        });
+    let uniforms = Uniforms {
+        view_proj: cgmath::Matrix4::identity().into(),
+        forecast: 0.0,
+    };
+    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Tank Uniform Buffer"),
+        contents: bytemuck::cast_slice(&[uniforms]),
+        usage: wgpu::BufferUsage::UNIFORM | wgpu::BufferUsage::COPY_DST,
+    });
 
-        let uniform_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("uniform_bind_group_layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStage::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &uniform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
+    let uniform_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("uniform_bind_group_layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
+                visibility: wgpu::ShaderStage::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             }],
-            label: Some("uniform_bind_group"),
         });
+    let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout: &uniform_bind_group_layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: uniform_buffer.as_entire_binding(),
+        }],
+        label: Some("uniform_bind_group"),
+    });
 
-        let tank_layer = TankLayer::new(device, format.into(), &uniform_bind_group_layout);
-        let maze_layer = MazeLayer::new(device, format.into(), &uniform_bind_group_layout);
+    let tank_layer = TankLayer::new(device, format.into(), &uniform_bind_group_layout);
+    let maze_layer = MazeLayer::new(device, format.into(), &uniform_bind_group_layout);
 
-        // Start physic emulation
-        let (tank_update_sender, tank_update_chan) = bounded(0);
-        let (maze_update_sender, maze_update_chan) = bounded(0);
-        let (stop_signal_sender, stop_signal_chan) = bounded(0);
+    // Start physic emulation
+    let (tank_update_sender, tank_update_chan) = bounded(0);
+    let (maze_update_sender, maze_update_chan) = bounded(0);
+    let (stop_signal_sender, stop_signal_chan) = bounded(0);
 
-        (
-            GameSceneRender {
-                clean_color,
-                uniforms,
-                uniform_buffer,
-                uniform_bind_group,
-                tank_layer,
-                maze_layer,
-                maze_size: [1, 1],
+    let mut physical = RefCell::new(PhysicalStatus {
+        tanks: Vec::new(),
+        seq_number: 0,
+        pipeline: PhysicsPipeline::new(),
+        integration_parameters: IntegrationParameters::default(),
+        broad_phase: BroadPhase::new(),
+        narrow_phase: NarrowPhase::new(),
+        rigid_body_set: RigidBodySet::new(),
+        collider_set: ColliderSet::new(),
+        joint_set: JointSet::new(),
+    });
 
-                tank_update_chan,
-                maze_update_chan,
-                stop_signal_sender,
+    (
+        GameSceneRender {
+            clean_color,
+            uniforms,
+            uniform_buffer,
+            uniform_bind_group,
+            tank_layer,
+            maze_layer,
+            maze_size: [1, 1],
 
-                last_update: time::Instant::now(),
-            },
-            GameSceneUpdater {
-                tank_update_sender,
-                maze_update_sender,
-                stop_signal_chan,
-            },
-        )
-    }
+            tank_update_chan,
+            maze_update_chan,
+            stop_signal_sender,
+
+            last_update: time::Instant::now(),
+        },
+        GameSceneUpdater {
+            physical,
+            tank_update_sender,
+            maze_update_sender,
+            stop_signal_chan,
+        },
+    )
 }
 
 impl GameSceneUpdater {
     fn manage(&self, input_handler: &InputHandler) -> Result<(), Box<dyn Error>> {
-        let mut physical = PhysicalStatus {
-            tanks: Vec::new(),
-            seq_number: 0,
-            pipeline: PhysicsPipeline::new(),
-            integration_parameters: IntegrationParameters::default(),
-            broad_phase: BroadPhase::new(),
-            narrow_phase: NarrowPhase::new(),
-            rigid_body_set: RigidBodySet::new(),
-            collider_set: ColliderSet::new(),
-            joint_set: JointSet::new(),
-        };
+        let mut physical = self.physical.borrow_mut();
         physical.integration_parameters.dt = PHYSICAL_DT;
         let ticker = tick(time::Duration::from_secs_f32(PHYSICAL_DT));
 
@@ -270,6 +251,28 @@ impl GameSceneUpdater {
                 }
             }
         }
+    }
+
+    pub fn add_player(&self, controller: Box<dyn Controller>) {
+        let mut physical = &mut *self.physical.borrow_mut();
+        let right_body = RigidBodyBuilder::new_dynamic()
+            .can_sleep(true)
+            .mass(0.9)
+            .linear_damping(10.0)
+            .principal_angular_inertia(0.8)
+            .angular_damping(10.0)
+            .build();
+        let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
+        let rigid_body_handle = physical.rigid_body_set.insert(right_body);
+        let collider_handle =
+            physical.collider_set
+                .insert(collider, rigid_body_handle, &mut physical.rigid_body_set);
+
+        physical.tanks.push(PhysicTank {
+            controller,
+            rigid_body_handle,
+            collider_handle,
+        });
     }
 }
 
@@ -340,19 +343,19 @@ impl SceneRender for GameSceneRender {
 impl SceneUpdater for GameSceneUpdater {
     fn update(
         &self,
-        device: &wgpu::Device,
-        format: wgpu::TextureFormat,
+        _device: &wgpu::Device,
+        _format: wgpu::TextureFormat,
         input_handler: &InputHandler,
-    ) -> (Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>) {
-        debug!("Update thread spawned");
+    ) -> Option<(Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>)> {
+        debug!("Start update");
         self.manage(input_handler)
             .unwrap_or_else(|err| error!("{}", err));
-        debug!("Update thread exit");
-        panic!("GameScene update thread finished")
+        debug!("Stop update");
+        None
     }
 }
 
-impl Drop for GameScene {
+impl Drop for GameSceneRender {
     fn drop(&mut self) {
         // This will block until update thread quit
         self.stop_signal_sender.send(()).unwrap();
@@ -390,27 +393,6 @@ impl PhysicalStatus {
         );
         // Increase simulate sequence number.
         self.seq_number += 1;
-    }
-
-    pub fn add_player(&mut self, controller: Box<dyn Controller>) {
-        let right_body = RigidBodyBuilder::new_dynamic()
-            .can_sleep(true)
-            .mass(0.9)
-            .linear_damping(10.0)
-            .principal_angular_inertia(0.8)
-            .angular_damping(10.0)
-            .build();
-        let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
-        let rigid_body_handle = self.rigid_body_set.insert(right_body);
-        let collider_handle =
-            self.collider_set
-                .insert(collider, rigid_body_handle, &mut self.rigid_body_set);
-
-        self.tanks.push(PhysicTank {
-            controller,
-            rigid_body_handle,
-            collider_handle,
-        });
     }
 
     pub fn add_maze(&mut self, vertices: Vec<Point<f32>>, indices: Vec<[u32; 3]>) {

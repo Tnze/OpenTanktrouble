@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use gilrs::{Axis, Button, Event, GamepadId, Gilrs};
+use gilrs::{Axis, Button, Event, GamepadId};
 
 pub struct Gamepad {
     controllers: HashMap<GamepadId, Arc<Mutex<(f32, f32)>>>,
