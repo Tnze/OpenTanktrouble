@@ -15,7 +15,7 @@ impl Gamepad {
             controllers: HashMap::new(),
         }
     }
-    pub fn input_event(&mut self, gilrs: &gilrs::Gilrs, Event { id, .. }: &Event) {
+    pub fn input_event(&self, gilrs: &gilrs::Gilrs, Event { id, .. }: &Event) {
         if let Some(ctrl) = self.controllers.get(id) {
             *ctrl.lock().unwrap() = {
                 let gamepad = gilrs.gamepad(*id);

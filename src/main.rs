@@ -59,14 +59,14 @@ fn main() {
                         info!("Fullscreen mode is changing to {:?}", fullscreen_mode);
                         window.set_fullscreen(fullscreen_mode);
                     }
-                    _ => window_state.input_center.window_event(event),
+                    _ => window_state.input_event_sender.window_event(event),
                 },
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::Resized(physical_size) => window_state.resize(Some(*physical_size)),
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     window_state.resize(Some(**new_inner_size))
                 }
-                _ => window_state.input_center.window_event(event),
+                _ => window_state.input_event_sender.window_event(event),
             },
             Event::RedrawRequested(_) => {
                 use wgpu::SwapChainError::{Lost, OutOfMemory};

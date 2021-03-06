@@ -17,7 +17,7 @@ use wgpu::util::DeviceExt;
 use maze_layer::{MazeData, MazeLayer};
 use tank_layer::{TankInstance, TankLayer};
 
-use crate::input::{Controller, input_center::InputHandler};
+use crate::input::{Controller, input_center::InputCenter};
 
 use super::{maze::Maze, render_layer::Layer, SceneRender, SceneUpdater};
 
@@ -182,7 +182,7 @@ pub(crate) fn new(
 }
 
 impl GameSceneUpdater {
-    fn manage(&self, input_handler: &InputHandler) -> Result<(), Box<dyn Error>> {
+    fn manage(&self, input_center: &InputCenter) -> Result<(), Box<dyn Error>> {
         let mut physical = self.physical.borrow_mut();
         physical.integration_parameters.dt = PHYSICAL_DT;
         let ticker = tick(time::Duration::from_secs_f32(PHYSICAL_DT));
@@ -202,6 +202,7 @@ impl GameSceneUpdater {
         physical.add_maze(maze_mesh_vertices, maze_mesh_indexes);
 
         'next_update: loop {
+            input_center.update(|_| (), |_, _| ())?;
             physical.update_tick();
             let mut update_data = Some(
                 physical
@@ -265,7 +266,8 @@ impl GameSceneUpdater {
         let collider = ColliderBuilder::cuboid(0.2, 0.25).build();
         let rigid_body_handle = physical.rigid_body_set.insert(right_body);
         let collider_handle =
-            physical.collider_set
+            physical
+                .collider_set
                 .insert(collider, rigid_body_handle, &mut physical.rigid_body_set);
 
         physical.tanks.push(PhysicTank {
@@ -345,10 +347,10 @@ impl SceneUpdater for GameSceneUpdater {
         &self,
         _device: &wgpu::Device,
         _format: wgpu::TextureFormat,
-        input_handler: &InputHandler,
+        input_center: &InputCenter,
     ) -> Option<(Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>)> {
         debug!("Start update");
-        self.manage(input_handler)
+        self.manage(input_center)
             .unwrap_or_else(|err| error!("{}", err));
         debug!("Stop update");
         None

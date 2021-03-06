@@ -1,4 +1,4 @@
-use crate::input::{Controller, input_center::InputHandler};
+use crate::input::{Controller, input_center::InputCenter};
 
 // pub mod main_menu;
 pub mod game_scene;
@@ -21,6 +21,6 @@ pub trait SceneUpdater {
         &self,
         device: &wgpu::Device,
         format: wgpu::TextureFormat,
-        input_handler: &InputHandler,
+        input_center: &InputCenter,
     ) -> Option<(Box<dyn SceneRender + Sync + Send>, Box<dyn SceneUpdater>)>;
 }
