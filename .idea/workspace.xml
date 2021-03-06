@@ -12,12 +12,11 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Handling input">
+    <list default="true" id="a88cd544-3bfa-413c-a616-5d8a2c79014b" name="Default Changelist" comment="Prepare scene now wait for at least 2 players before switch to game scene">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Cargo.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/input/gamepad_controller.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/gamepad_controller.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/input/input_center.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/input/input_center.rs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/game_scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/mod.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/mod.rs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/scene/prepare_scene.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/scene/prepare_scene.rs" afterDir="false" />
@@ -109,7 +108,7 @@
       <command value="cargo clean" />
     </option>
   </component>
-  <component name="RunManager" selected="Cargo.Debug">
+  <component name="RunManager" selected="Cargo.Clippy">
     <configuration name="Check" type="CargoCommandRunConfiguration" factoryName="Cargo Command">
       <option name="command" value="check" />
       <option name="workingDirectory" value="file://$PROJECT_DIR$" />
@@ -262,6 +261,11 @@
         <option name="CARGO.BUILD_TASK_PROVIDER" enabled="true" />
       </method>
     </configuration>
+    <configuration default="true" type="GradleAppRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.cpp.gradle.execution.GradleNativeBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Cargo.Check" />
       <item itemvalue="Cargo.Clippy" />
@@ -376,7 +380,7 @@
       <workItem from="1614866706986" duration="2115000" />
       <workItem from="1614917962599" duration="14770000" />
       <workItem from="1614951979765" duration="1005000" />
-      <workItem from="1614999711581" duration="8013000" />
+      <workItem from="1614999711581" duration="13242000" />
     </task>
     <task id="LOCAL-00001" summary="Basic Vulkan demo">
       <created>1609222248225</created>
@@ -651,7 +655,14 @@
       <option name="project" value="LOCAL" />
       <updated>1615000699768</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="Prepare scene now wait for at least 2 players before switch to game scene">
+      <created>1615011637847</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1615011637847</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -682,7 +693,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Add round button and gear vertex generator" />
     <MESSAGE value="Create and use a PairIterator" />
     <MESSAGE value="Do not use Iterator in the vertex generator" />
     <MESSAGE value="Implement instant data update" />
@@ -707,7 +717,8 @@
     <MESSAGE value="Rust is forcing me to divide the structure into two parts. I hate rust." />
     <MESSAGE value="Successfully switch scene" />
     <MESSAGE value="Handling input" />
-    <option name="LAST_COMMIT_MESSAGE" value="Handling input" />
+    <MESSAGE value="Prepare scene now wait for at least 2 players before switch to game scene" />
+    <option name="LAST_COMMIT_MESSAGE" value="Prepare scene now wait for at least 2 players before switch to game scene" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="REFORMAT_BEFORE_PROJECT_COMMIT" value="true" />
   </component>

@@ -1,4 +1,4 @@
-use crate::input::{Controller, input_center::InputCenter};
+use crate::input::input_center::InputCenter;
 
 // pub mod main_menu;
 pub mod game_scene;

@@ -2,21 +2,22 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use std::cell::RefCell;
 
 use gilrs::{Axis, Button, Event, GamepadId};
 
 pub struct Gamepad {
-    controllers: HashMap<GamepadId, Arc<Mutex<(f32, f32)>>>,
+    controllers: RefCell<HashMap<GamepadId, Arc<Mutex<(f32, f32)>>>>,
 }
 
 impl Gamepad {
     pub fn new() -> Gamepad {
         Gamepad {
-            controllers: HashMap::new(),
+            controllers: RefCell::new(HashMap::new()),
         }
     }
     pub fn input_event(&self, gilrs: &gilrs::Gilrs, Event { id, .. }: &Event) {
-        if let Some(ctrl) = self.controllers.get(id) {
+        if let Some(ctrl) = self.controllers.borrow().get(id) {
             *ctrl.lock().unwrap() = {
                 let gamepad = gilrs.gamepad(*id);
                 let get_axis = |axis: Axis| gamepad.axis_data(axis).map_or(0.0, |x| x.value());
@@ -48,18 +49,15 @@ impl Gamepad {
             };
         }
     }
+    pub fn create_gamepad_controller(&self, gamepad: GamepadId) -> Controller {
+        let status = Arc::new(Mutex::new((0.0, 0.0)));
+        self.controllers.borrow_mut().insert(gamepad, status.clone());
+        Controller { status }
+    }
 }
 
 pub struct Controller {
     status: Arc<Mutex<(f32, f32)>>,
-}
-
-impl Controller {
-    pub fn create_gamepad_controller(parent: &mut Gamepad, gamepad: GamepadId) -> Controller {
-        let status = Arc::new(Mutex::new((0.0, 0.0)));
-        parent.controllers.insert(gamepad, status.clone());
-        Controller { status }
-    }
 }
 
 impl super::Controller for Controller {

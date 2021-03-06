@@ -2,7 +2,7 @@ use std::{error::Error, time};
 use std::cell::RefCell;
 
 use cgmath::SquareMatrix;
-use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
+use crossbeam_channel::{bounded, Receiver, Select, Sender, tick};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
 use rapier2d::{
@@ -144,7 +144,7 @@ pub(crate) fn new(
     let (maze_update_sender, maze_update_chan) = bounded(0);
     let (stop_signal_sender, stop_signal_chan) = bounded(0);
 
-    let mut physical = RefCell::new(PhysicalStatus {
+    let physical = RefCell::new(PhysicalStatus {
         tanks: Vec::new(),
         seq_number: 0,
         pipeline: PhysicsPipeline::new(),
@@ -255,7 +255,7 @@ impl GameSceneUpdater {
     }
 
     pub fn add_player(&self, controller: Box<dyn Controller>) {
-        let mut physical = &mut *self.physical.borrow_mut();
+        let physical = &mut *self.physical.borrow_mut();
         let right_body = RigidBodyBuilder::new_dynamic()
             .can_sleep(true)
             .mass(0.9)

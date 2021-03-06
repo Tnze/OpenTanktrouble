@@ -1,5 +1,6 @@
 use std::{error::Error, sync::Arc};
 
+use gilrs::{Event, EventType};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
 use wgpu::{Device, Queue, SwapChainError, SwapChainTexture};
@@ -25,59 +26,75 @@ pub struct PrepareSceneRender {}
 pub struct PrepareSceneUpdater {}
 
 pub fn new(
-    device: Arc<wgpu::Device>,
-    format: wgpu::TextureFormat,
+    _device: Arc<wgpu::Device>,
+    _format: wgpu::TextureFormat,
 ) -> (PrepareSceneRender, PrepareSceneUpdater) {
     (PrepareSceneRender {}, PrepareSceneUpdater {})
 }
 
 impl PrepareSceneUpdater {
     fn manage(&self, input_center: &InputCenter) -> Result<Vec<Player>, Box<dyn Error>> {
-        let mut finish = false;
-        let mut players = vec![];
-
-        while !finish {
-            finish = input_center
+        use std::cell::RefCell;
+        let players = RefCell::new(vec![]);
+        while players.borrow().len() < 2 {
+            input_center
                 .update(
-                    |event| -> Result<bool, Box<dyn Error>> {
-                        let &winit::event::KeyboardInput {
-                            state,
-                            scancode,
+                    |event| {
+                        let players = &mut *players.borrow_mut();
+                        if let winit::event::KeyboardInput {
+                            state: ElementState::Pressed,
                             virtual_keycode,
                             ..
-                        } = event;
-                        if let ElementState::Pressed = state {
+                        } = *event
+                        {
                             match virtual_keycode {
-                                Some(VirtualKeyCode::Q) => players.push(Player {
-                                    controller: Box::new(input_center.create_controller_red()),
-                                    status: ControllerStatus::Prepared,
-                                }),
-                                Some(VirtualKeyCode::M) => players.push(Player {
-                                    controller: Box::new(input_center.create_controller_green()),
-                                    status: ControllerStatus::Prepared,
-                                }),
+                                Some(VirtualKeyCode::Q) => {
+                                    debug!("New player: {}", "Q");
+                                    players.push(Player {
+                                        controller: Box::new(input_center.create_controller_red()),
+                                        status: ControllerStatus::Prepared,
+                                    })
+                                }
+                                Some(VirtualKeyCode::M) => {
+                                    debug!("New player: {}", "M");
+                                    players.push(Player {
+                                        controller: Box::new(input_center.create_controller_green()),
+                                        status: ControllerStatus::Prepared,
+                                    })
+                                }
                                 _ => {}
                             }
-                            Ok(players.len() >= 2)
-                        } else {
-                            Ok(false)
                         }
                     },
-                    |gilrs, event| -> Result<bool, Box<dyn Error>> { Ok(false) },
+                    |gilrs, event| {
+                        let players = &mut *players.borrow_mut();
+                        if let Event {
+                            id,
+                            event: EventType::ButtonPressed(gilrs::Button::South, ..),
+                            ..
+                        } = *event
+                        {
+                            debug!("New player: {}", gilrs.gamepad(id).name());
+                            players.push(Player {
+                                controller: Box::new(input_center.create_gamepad_controller(id)),
+                                status: ControllerStatus::Prepared,
+                            })
+                        }
+                    },
                 )?
-                .unwrap_or(Ok(false))?;
+                .unwrap_or(());
         }
-        Ok(players)
+        Ok(players.take())
     }
 }
 
 impl SceneRender for PrepareSceneRender {
     fn render(
         &mut self,
-        device: &Device,
-        queue: &Queue,
-        frame: &SwapChainTexture,
-        frame_size: [u32; 2],
+        _device: &Device,
+        _queue: &Queue,
+        _frame: &SwapChainTexture,
+        _frame_size: [u32; 2],
     ) -> Result<(), SwapChainError> {
         Ok(())
     }

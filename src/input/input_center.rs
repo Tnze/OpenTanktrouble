@@ -1,7 +1,10 @@
-use crossbeam_channel::{bounded, Receiver, Select, Sender, tick, unbounded};
+use std::cell::RefCell;
+
+use crossbeam_channel::{Receiver, Sender, unbounded};
+use gilrs::GamepadId;
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{KeyboardInput, VirtualKeyCode, WindowEvent};
 
 use super::{
     Controller,
@@ -10,36 +13,29 @@ use super::{
 };
 
 pub struct InputCenter {
-    gilrs: gilrs::Gilrs,
+    gilrs: RefCell<gilrs::Gilrs>,
     gamepad_ctrl: Gamepad,
     keyboard_ctrl: Keyboard,
     keyboard_receiver: Receiver<KeyboardInput>,
-    gamepad_receiver: Receiver<gilrs::Event>,
 }
 
 #[derive(Clone)]
 pub struct InputEventSender {
     keyboard_sender: Sender<KeyboardInput>,
-    gamepad_sender: Sender<gilrs::Event>,
 }
 
 impl InputCenter {
     pub fn new() -> (Self, InputEventSender) {
         let gilrs = gilrs::Gilrs::new().unwrap();
         let (keyboard_sender, keyboard_receiver) = unbounded();
-        let (gamepad_sender, gamepad_receiver) = unbounded();
         (
             InputCenter {
-                gilrs,
+                gilrs: RefCell::new(gilrs),
                 gamepad_ctrl: Gamepad::new(),
                 keyboard_ctrl: Keyboard::new(),
                 keyboard_receiver,
-                gamepad_receiver,
             },
-            InputEventSender {
-                keyboard_sender,
-                gamepad_sender,
-            },
+            InputEventSender { keyboard_sender },
         )
     }
 
@@ -52,18 +48,15 @@ impl InputCenter {
             KH: FnOnce(&KeyboardInput) -> R,
             GH: FnOnce(&gilrs::Gilrs, &gilrs::Event) -> R,
     {
-        crossbeam_channel::select! {
-            recv(self.keyboard_receiver) -> input => {
-                let input = input?;
-                self.keyboard_ctrl.input_event(&input);
-                Ok(Some(keyboard_event_handler(&input)))
-            },
-            recv(self.gamepad_receiver) -> event => {
-                let event = event?;
-                self.gamepad_ctrl.input_event(&self.gilrs, &event);
-                Ok(Some(gamepad_event_handler(&self.gilrs, &event)))
-            },
-            default => Ok(None),
+        let gilrs = &mut *self.gilrs.borrow_mut();
+        if let Ok(input) = self.keyboard_receiver.try_recv() {
+            self.keyboard_ctrl.input_event(&input);
+            Ok(Some(keyboard_event_handler(&input)))
+        } else if let Some(event) = gilrs.next_event() {
+            self.gamepad_ctrl.input_event(gilrs, &event);
+            Ok(Some(gamepad_event_handler(gilrs, &event)))
+        } else {
+            Ok(None)
         }
     }
 
@@ -83,19 +76,15 @@ impl InputCenter {
             Key::LogicKey(VirtualKeyCode::Right),
         ])
     }
+    pub fn create_gamepad_controller(&self, id: GamepadId) -> impl Controller {
+        self.gamepad_ctrl.create_gamepad_controller(id)
+    }
 }
 
 impl InputEventSender {
-    pub fn gamepad_event(&mut self, gilrs: &mut gilrs::Gilrs, event: &gilrs::Event) {
-        self.gamepad_sender.send(*event).unwrap_or(());
-    }
-
     pub fn window_event(&mut self, event: &WindowEvent) {
-        match event {
-            WindowEvent::KeyboardInput { input, .. } => {
-                self.keyboard_sender.send(*input).unwrap_or(());
-            }
-            _ => {}
+        if let WindowEvent::KeyboardInput { input, .. } = event {
+            self.keyboard_sender.send(*input).unwrap_or(());
         }
     }
 }

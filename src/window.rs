@@ -1,15 +1,11 @@
 use std::{error::Error, sync::Arc, thread};
 
-use crossbeam_channel::{bounded, Receiver, Sender, unbounded};
+use crossbeam_channel::{bounded, Receiver, unbounded};
 #[allow(unused_imports)]
 use log::{debug, error, info, log_enabled};
 use winit::window::Window;
 
-use crate::input::{
-    Controller,
-    input_center::{InputCenter, InputEventSender},
-    keyboard_controller::Key,
-};
+use crate::input::input_center::{InputCenter, InputEventSender};
 use crate::scene::{prepare_scene, SceneRender, SceneUpdater};
 
 pub struct WindowState {
@@ -22,7 +18,6 @@ pub struct WindowState {
 
     current_scene: Box<dyn SceneRender + Sync + Send>,
     update_scene_chan: Receiver<Box<dyn SceneRender + Sync + Send>>,
-    gilrs: gilrs::Gilrs,
     pub input_event_sender: InputEventSender,
 }
 
@@ -86,8 +81,6 @@ impl WindowState {
         let input_event_sender = input_event_sender_receiver.recv()?;
         let current_scene = update_scene_chan.recv()?;
 
-        let gilrs = gilrs::Gilrs::new()?;
-
         Ok(Self {
             surface,
             device,
@@ -97,7 +90,6 @@ impl WindowState {
             size,
             current_scene,
             update_scene_chan,
-            gilrs,
             input_event_sender,
         })
     }
@@ -119,9 +111,6 @@ impl WindowState {
     }
 
     pub fn update(&mut self) {
-        while let Some(ref event) = self.gilrs.next_event() {
-            self.input_event_sender.gamepad_event(&mut self.gilrs, event);
-        }
         if let Ok(scene) = self.update_scene_chan.try_recv() {
             self.current_scene = scene;
         }
