@@ -20,6 +20,7 @@ wgpu = "0.7"
 bytemuck = { version = "1.5.1", features = ["derive"] }
 winit = "0.24"
 msgbox = "0.6.0"
+rodio = "0.13"
 
 gilrs = "0.8"
 rapier2d = { version = "0.5", features = ["simd-stable", "parallel"] }
